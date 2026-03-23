@@ -21,7 +21,12 @@ repositories {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-session-jdbc")
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+	implementation("org.springframework.boot:spring-boot-starter-web")
+
 	testImplementation("org.springframework.boot:spring-boot-starter-session-jdbc-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
