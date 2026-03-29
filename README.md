@@ -47,12 +47,30 @@ A aplicação sobe em `http://localhost:8080`. O console H2 (perfil padrão) fic
 Na **raiz** do repositório:
 
 ```bash
+cp .env.example .env
+```
+
+Edite o arquivo `.env` e defina valores locais (principalmente `POSTGRES_PASSWORD` e `SPRING_DATASOURCE_PASSWORD`).
+
+Exemplo de `.env`:
+
+```dotenv
+POSTGRES_DB=oficina
+POSTGRES_USER=oficina
+POSTGRES_PASSWORD=change-me-in-local-env
+
+SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/oficina
+SPRING_DATASOURCE_USERNAME=oficina
+SPRING_DATASOURCE_PASSWORD=change-me-in-local-env
+```
+
+```bash
 docker compose up --build
 ```
 
 - API: `http://localhost:8080`
 - Health (público): `http://localhost:8080/actuator/health`
-- Variáveis principais do serviço `app`: `SPRING_PROFILES_ACTIVE=docker`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` (valores padrão alinhados ao serviço `db` no [`docker-compose.yml`](docker-compose.yml)).
+- Variaveis principais do servico `app`: `SPRING_PROFILES_ACTIVE=docker`, `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` (definidas via `.env`).
 
 ### Segurança e JWT
 
