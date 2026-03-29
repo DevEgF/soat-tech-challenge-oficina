@@ -1,4 +1,4 @@
-package com.soat.tech.challenge.oficina.oficina
+package com.soat.tech.challenge.oficina
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
