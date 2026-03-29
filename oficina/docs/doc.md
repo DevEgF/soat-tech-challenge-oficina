@@ -39,7 +39,7 @@ Abaixo estão os mapeamentos de Ações e Eventos de Domínio.
 
 ## Diagrama Event Storming
 
-![Event Storming](events.png)
+![Event Storming](event.png)
 
 ## Link para o diagrama interativo no Excalidraw:
 https://excalidraw.com/#json=hNqS470KXMvDfNgdykG-P,66YHxm_zQ_vM3HjqrPO7qg
