@@ -9,9 +9,12 @@ data class Peca(
 	val name: String,
 	val priceCents: Long,
 	val stockQuantity: Int,
+	/** When non-null and stock is at or below this value, almoxarife sees low-stock alert. */
+	val replenishmentPoint: Int? = null,
 ) {
 	init {
 		require(stockQuantity >= 0) { "Stock cannot be negative" }
+		require(replenishmentPoint == null || replenishmentPoint >= 0) { "Replenishment point cannot be negative" }
 	}
 
 	fun withAdjustedStock(delta: Int): Peca {

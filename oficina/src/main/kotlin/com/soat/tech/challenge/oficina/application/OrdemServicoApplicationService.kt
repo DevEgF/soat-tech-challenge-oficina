@@ -11,10 +11,12 @@ import com.soat.tech.challenge.oficina.domain.model.LinhaPecaOrdem
 import com.soat.tech.challenge.oficina.domain.model.LinhaServicoOrdem
 import com.soat.tech.challenge.oficina.domain.model.OrdemServico
 import com.soat.tech.challenge.oficina.domain.model.PlacaVeiculo
+import com.soat.tech.challenge.oficina.domain.model.StatusOrdemServico
 import com.soat.tech.challenge.oficina.domain.model.Veiculo
 import com.soat.tech.challenge.oficina.domain.port.ClienteRepository
 import com.soat.tech.challenge.oficina.domain.port.OrdemServicoRepository
 import com.soat.tech.challenge.oficina.domain.port.PecaRepository
+import com.soat.tech.challenge.oficina.domain.port.ReservaPecaOsRepository
 import com.soat.tech.challenge.oficina.domain.port.ServicoCatalogoRepository
 import com.soat.tech.challenge.oficina.domain.port.VeiculoRepository
 import org.springframework.stereotype.Service
@@ -29,6 +31,7 @@ class OrdemServicoApplicationService(
 	private val vehicles: VeiculoRepository,
 	private val catalogServices: ServicoCatalogoRepository,
 	private val parts: PecaRepository,
+	private val reservations: ReservaPecaOsRepository,
 	private val clock: Clock,
 ) {
 
@@ -40,6 +43,25 @@ class OrdemServicoApplicationService(
 
 	private fun OrdemServico.toDto(): OrdemServicoResponse =
 		toResponse({ catalogServiceName(it) }, { partName(it) })
+
+	private fun now() = clock.instant()
+
+	private fun validateAndReplaceReservations(wo: OrdemServico) {
+		val map = wo.partLines.associate { it.partId to it.quantity }
+		for ((partId, need) in map) {
+			val part = parts.findById(partId).orElseThrow { NotFoundException("Part not found") }
+			val reservedElsewhere = reservations.sumPendingReservedQuantityExcludingWorkOrder(partId, wo.id)
+			val available = part.stockQuantity - reservedElsewhere
+			if (need > available) {
+				throw InsufficientStockException(partId.toString(), need, available)
+			}
+		}
+		reservations.replacePendingReservations(wo.id, map)
+	}
+
+	private fun cancelReservationsIfAny(woId: UUID) {
+		reservations.cancelPendingForWorkOrder(woId)
+	}
 
 	@Transactional
 	fun create(req: CriarOrdemServicoRequest): OrdemServicoResponse {
@@ -130,7 +152,39 @@ class OrdemServicoApplicationService(
 		else -> "***"
 	}
 
-	private fun now() = clock.instant()
+	private fun loadWorkOrderForCustomer(documentDigits: String, trackingCode: String): OrdemServico {
+		val doc = DocumentoFiscal.parse(documentDigits)
+		val wo = workOrders.findByTrackingCode(trackingCode.trim())
+			.orElseThrow { NotFoundException("Work order not found") }
+		val customer = customers.findById(wo.customerId).orElseThrow { NotFoundException("Customer not found") }
+		if (customer.fiscalDocument.digits != doc.digits) {
+			throw IllegalArgumentException("Document does not match this work order")
+		}
+		return wo
+	}
+
+	@Transactional
+	fun approveCustomerQuote(customerTaxIdDigits: String, trackingCode: String): AcompanhamentoOsResponse {
+		val wo = loadWorkOrderForCustomer(customerTaxIdDigits, trackingCode)
+		require(wo.status == StatusOrdemServico.AGUARDANDO_APROVACAO) {
+			"Orçamento não está aguardando aprovação do cliente"
+		}
+		wo.approveCustomerQuote(now())
+		workOrders.save(wo)
+		return track(customerTaxIdDigits, trackingCode)
+	}
+
+	@Transactional
+	fun rejectCustomerQuote(customerTaxIdDigits: String, trackingCode: String): AcompanhamentoOsResponse {
+		val wo = loadWorkOrderForCustomer(customerTaxIdDigits, trackingCode)
+		require(wo.status == StatusOrdemServico.AGUARDANDO_APROVACAO) {
+			"Orçamento não está aguardando aprovação do cliente"
+		}
+		cancelReservationsIfAny(wo.id)
+		wo.rejectCustomerQuote(now())
+		workOrders.save(wo)
+		return track(customerTaxIdDigits, trackingCode)
+	}
 
 	@Transactional
 	fun startDiagnosis(id: UUID): OrdemServicoResponse {
@@ -139,34 +193,44 @@ class OrdemServicoApplicationService(
 		return workOrders.save(wo).toDto()
 	}
 
+	/** Técnico: submete plano e cria reservas de peças. */
 	@Transactional
-	fun sendQuote(id: UUID): OrdemServicoResponse {
+	fun submitPlanForInternalApproval(id: UUID): OrdemServicoResponse {
 		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
-		wo.sendQuote(now())
+		wo.submitPlanForInternalApproval(now())
+		validateAndReplaceReservations(wo)
 		return workOrders.save(wo).toDto()
 	}
 
+	/** Administrador: reprova plano interno. */
 	@Transactional
-	fun approveQuote(id: UUID): OrdemServicoResponse {
+	fun rejectInternal(id: UUID): OrdemServicoResponse {
 		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
-		deductStock(wo)
-		wo.approveQuote(now())
+		cancelReservationsIfAny(wo.id)
+		wo.rejectInternal(now())
 		return workOrders.save(wo).toDto()
 	}
 
-	private fun deductStock(wo: OrdemServico) {
-		for (line in wo.partLines) {
-			val part = parts.findById(line.partId).orElseThrow { NotFoundException("Part not found") }
-			if (part.stockQuantity < line.quantity) {
-				throw InsufficientStockException(line.partId.toString(), line.quantity, part.stockQuantity)
-			}
-			parts.save(part.withAdjustedStock(-line.quantity))
-		}
+	/** Administrador: aprova execução interna. */
+	@Transactional
+	fun approveInternal(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.approveInternal(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	/** Atendente: envia orçamento ao cliente. */
+	@Transactional
+	fun sendQuoteToCustomer(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.sendQuoteToCustomer(now())
+		return workOrders.save(wo).toDto()
 	}
 
 	@Transactional
 	fun returnToDiagnosis(id: UUID): OrdemServicoResponse {
 		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		cancelReservationsIfAny(wo.id)
 		wo.returnToDiagnosis(now())
 		return workOrders.save(wo).toDto()
 	}
@@ -174,6 +238,12 @@ class OrdemServicoApplicationService(
 	@Transactional
 	fun completeServices(id: UUID): OrdemServicoResponse {
 		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		val pending = reservations.findPendingByWorkOrder(wo.id)
+		if (pending.isNotEmpty()) {
+			throw IllegalStateException(
+				"Existem reservas de peças pendentes de confirmação de saída pelo almoxarife",
+			)
+		}
 		wo.completeServices(now())
 		return workOrders.save(wo).toDto()
 	}

@@ -85,6 +85,8 @@ data class PecaRequest(
 	@field:NotNull @field:Min(0) val priceCents: Long? = null,
 	@get:JsonProperty("quantidadeEstoque")
 	@field:NotNull @field:Min(0) val stockQuantity: Int? = null,
+	@get:JsonProperty("pontoReposicao")
+	@field:Min(0) val replenishmentPoint: Int? = null,
 )
 
 data class PecaResponse(
@@ -93,6 +95,14 @@ data class PecaResponse(
 	@get:JsonProperty("nome") val name: String,
 	@get:JsonProperty("precoCentavos") val priceCents: Long,
 	@get:JsonProperty("quantidadeEstoque") val stockQuantity: Int,
+	@get:JsonProperty("pontoReposicao") val replenishmentPoint: Int?,
+)
+
+data class EntradaMercadoriaRequest(
+	@get:JsonProperty("quantidade")
+	@field:NotNull @field:Min(1) val quantity: Int? = null,
+	@get:JsonProperty("referencia")
+	val reference: String? = null,
 )
 
 data class OrdemServicoLinhaServicoRequest(
@@ -172,4 +182,22 @@ data class TempoMedioServicoResponse(
 	@get:JsonProperty("nomeServico") val serviceName: String,
 	@get:JsonProperty("mediaMinutos") val averageMinutes: Double,
 	@get:JsonProperty("amostras") val sampleCount: Long,
+)
+
+data class ReservaPecaOsResponse(
+	val id: UUID,
+	@get:JsonProperty("ordemServicoId") val workOrderId: UUID,
+	@get:JsonProperty("pecaId") val partId: UUID,
+	@get:JsonProperty("nomePeca") val partName: String,
+	val quantity: Int,
+	val status: String,
+)
+
+data class EstoqueAlertaResponse(
+	@get:JsonProperty("pecaId") val partId: UUID,
+	val code: String,
+	val name: String,
+	@get:JsonProperty("quantidadeEstoque") val stockQuantity: Int,
+	@get:JsonProperty("pontoReposicao") val replenishmentPoint: Int?,
+	@get:JsonProperty("quantidadeReservadaPendente") val pendingReservedQuantity: Int,
 )

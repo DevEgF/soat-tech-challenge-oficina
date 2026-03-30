@@ -5,7 +5,7 @@ Monólito **Kotlin** com **Spring Boot** (JPA, Flyway, Spring Security OAuth2 Re
 ## Stack
 
 - Kotlin 2.3, Java 17, Gradle
-- Spring Boot (web, data-jpa, validation, flyway, security, oauth2-resource-server, session-jdbc, actuator)
+- Spring Boot (web, data-jpa, validation, flyway, security, oauth2-resource-server, actuator)
 - OpenAPI / Swagger UI (springdoc)
 - Banco local (padrão): H2 em memória + schema criado/atualizado pelo Hibernate (`ddl-auto=update`; Flyway **desligado** neste perfil)
 - Banco em Docker: **PostgreSQL** + **Flyway** (`validate` + scripts em `oficina/src/main/resources/db/migration`)
@@ -14,11 +14,11 @@ Monólito **Kotlin** com **Spring Boot** (JPA, Flyway, Spring Security OAuth2 Re
 
 | Termo | Significado |
 | ----- | ----------- |
-| **Ordem de serviço (OS)** | Agregado com status: Recebida → Em diagnóstico → Aguardando aprovação → Em execução → Finalizada → Entregue. |
+| **Ordem de serviço (OS)** | Recebida → Em diagnóstico → Aguardando aprovação interna → (reprovação interna → **Cancelada**) ou aprovação admin → atendente envia orçamento → Aguardando aprovação do cliente → Em execução → Finalizada → Entregue (ou cancelada pelo cliente). |
 | **Documento (CPF/CNPJ)** | Identificação do cliente; validação de dígitos no domínio. |
 | **Placa** | Identificação do veículo (padrão antigo ou Mercosul). |
 | **Serviço (catálogo)** | Serviço cadastrado com preço e tempo estimado. |
-| **Peça / insumo** | Item com estoque; baixa na **aprovação do orçamento** (início da execução). |
+| **Peça / insumo** | Estoque físico; **reserva** ao submeter o plano (técnico); **baixa** na confirmação de saída pelo almoxarife; **ponto de reposição** para alerta de estoque baixo. |
 | **Código de acompanhamento** | UUID público da OS para consulta pelo cliente. |
 
 Documentação DDD (Event Storming, diagramas) deve ser mantida no **Miro** (ou equivalente), conforme enunciado da disciplina.
@@ -36,11 +36,29 @@ Documentação DDD (Event Storming, diagramas) deve ser mantida no **Miro** (ou 
 
 - **OpenAPI JSON:** `http://localhost:8080/v3/api-docs`
 - **Swagger UI:** `http://localhost:8080/swagger-ui.html`
-- **Login (público):** `POST /api/public/auth/login` — corpo `{"username":"admin","password":"..."}` → `accessToken` JWT.
-- **Administrativo (JWT):** prefixo `/api/admin/**` — header `Authorization: Bearer <token>`.
-- **Cliente (público):** `GET /api/public/os/acompanhar?documento=<cpf/cnpj>&codigo=<uuid>` — documento com ou sem máscara.
+- **Login (público):** `POST /api/public/auth/login` — o JWT inclui escopos conforme o usuário (veja usuários demo abaixo).
+- **Cliente (público, sem token):**
+  - `GET /api/public/os/acompanhar?documento=&codigo=`
+  - `POST /api/public/os/aprovar-orcamento?documento=&codigo=`
+  - `POST /api/public/os/reprovar-orcamento?documento=&codigo=`
 
-Recursos admin: clientes, veículos, serviços de catálogo, peças, ordens de serviço (criação + ações de transição de status), métricas de tempo médio de execução por serviço (OS finalizadas ou entregues).
+### Usuários in-memory (senha = username, exceto admin)
+
+| Usuário      | Senha padrão | Escopo JWT   | Uso principal |
+| ------------ | ------------ | ------------ | ------------- |
+| `atendente`  | `atendente`  | `ATTENDANT`  | Criar OS, enviar orçamento ao cliente, entrega, voltar diagnóstico |
+| `tecnico`    | `tecnico`    | `TECHNICIAN` | Diagnóstico, submeter plano (reserva), concluir serviços |
+| `admin`      | `admin` (ou `APP_SECURITY_ADMIN_PASSWORD`) | `ADMIN` | Aprovar/reprovar plano interno, CRUD catálogo/peças/clientes/veículos, entrada de mercadoria, métricas |
+| `almoxarife` | `almoxarife` | `WAREHOUSE`  | Listar reservas pendentes por OS, confirmar saída (baixa física), alertas de estoque baixo |
+
+### Prefixos protegidos
+
+- `/api/admin/**` — `SCOPE_ADMIN` (clientes, veículos, catálogo, peças + `POST .../pecas/{id}/entrada-mercadoria`, OS interno aprovar/reprovar, métricas).
+- `/api/attendant/ordens-servico/**` — `SCOPE_ATTENDANT`.
+- `/api/technician/ordens-servico/**` — `SCOPE_TECHNICIAN`.
+- `/api/warehouse/**` — `SCOPE_WAREHOUSE` (reservas pendentes, confirmar saída, alertas).
+
+Fluxo resumido: técnico `submeter-plano` → admin `aprovar-interno` → atendente `enviar-orcamento-cliente` → cliente aprova/reprova (público) → almoxarife `confirmar-saida` → técnico `concluir-servicos` → atendente `registrar-entrega`.
 
 ## Escolha do banco de dados
 
@@ -61,8 +79,7 @@ Na pasta [`oficina/`](oficina/):
 Propriedades úteis (ver [`oficina/src/main/resources/application.properties`](oficina/src/main/resources/application.properties)):
 
 - `app.jwt.secret` / `APP_JWT_SECRET`
-- `app.security.admin.username` / `APP_SECURITY_ADMIN_USERNAME`
-- `app.security.admin.password` / `APP_SECURITY_ADMIN_PASSWORD`
+- `app.security.admin.password` / `APP_SECURITY_ADMIN_PASSWORD` (senha do usuário **admin**; demais usuários demo usam senha igual ao username)
 
 ### Docker Compose (aplicação + PostgreSQL)
 
@@ -86,8 +103,8 @@ SPRING_DATASOURCE_USERNAME=oficina
 SPRING_DATASOURCE_PASSWORD=change-me-in-local-env
 
 APP_JWT_SECRET=change-me-long-random-secret-for-hs256
-APP_SECURITY_ADMIN_USERNAME=admin
-APP_SECURITY_ADMIN_PASSWORD=change-me-in-local-env
+# Senha do login "admin" (Postman/demo); altere em produção.
+APP_SECURITY_ADMIN_PASSWORD=admin
 ```
 
 ```bash
@@ -110,7 +127,7 @@ cd oficina
 
 ## Relatório de vulnerabilidades
 
-Modelo e instruções de scan: [docs/relatorio-vulnerabilidades.md](docs/relatorio-vulnerabilidades.md). Inclua a saída das ferramentas no PDF de entrega da disciplina.
+Modelo e instruções de scan: [docs/relatorio-vulnerabilidades.md](oficina/docs/relatorio-vulnerabilidades.md). Inclua a saída das ferramentas no PDF de entrega da disciplina.
 
 ## Entrega (checklist institucional)
 

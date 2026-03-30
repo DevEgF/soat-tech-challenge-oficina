@@ -6,8 +6,10 @@ package com.soat.tech.challenge.oficina.domain.model
 enum class StatusOrdemServico {
 	RECEBIDA,
 	EM_DIAGNOSTICO,
+	AGUARDANDO_APROVACAO_INTERNA,
 	AGUARDANDO_APROVACAO,
 	EM_EXECUCAO,
 	FINALIZADA,
 	ENTREGUE,
+	CANCELADA,
 }

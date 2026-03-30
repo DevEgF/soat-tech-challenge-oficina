@@ -56,6 +56,7 @@ fun PecaEntity.toDomain(): Peca = Peca(
 	name = name,
 	priceCents = priceCents,
 	stockQuantity = stockQuantity,
+	replenishmentPoint = replenishmentPoint,
 )
 
 fun OrdemServicoEntity.toDomain(): OrdemServico {
@@ -85,10 +86,13 @@ fun OrdemServicoEntity.toDomain(): OrdemServico {
 		partsTotalCents = partsTotalCents,
 		totalCents = totalCents,
 		diagnosedAt = diagnosedAt,
+		planSubmittedAt = planSubmittedAt,
+		internalApprovedAt = internalApprovedAt,
 		quoteSentAt = quoteSentAt,
 		approvedAt = approvedAt,
 		workStartedAt = workStartedAt,
 		completedAt = completedAt,
 		deliveredAt = deliveredAt,
+		cancelledAt = cancelledAt,
 	)
 }

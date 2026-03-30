@@ -3,9 +3,10 @@ package com.soat.tech.challenge.oficina.infrastructure
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod
 import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
+import org.springframework.security.authentication.ProviderManager
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -19,6 +20,7 @@ import org.springframework.security.web.SecurityFilterChain
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 class SecurityConfiguration {
 
 	@Bean
@@ -26,21 +28,49 @@ class SecurityConfiguration {
 
 	@Bean
 	fun userDetailsService(
-		@Value("\${app.security.admin.username}") username: String,
-		@Value("\${app.security.admin.password}") passwordRaw: String,
+		@Value("\${app.security.admin.password:admin}") adminPassword: String,
 		encoder: PasswordEncoder,
 	): UserDetailsService {
-		val user = User.builder()
-			.username(username)
-			.password(encoder.encode(passwordRaw))
-			.roles("ADMIN")
-			.build()
-		return InMemoryUserDetailsManager(user)
+		// trim: .env / Windows por vezes introduzem espaço ou CRLF e o BCrypt deixa de bater com o Postman
+		val adminSecret = adminPassword.trim()
+		val users = listOf(
+			User.builder()
+				.username("atendente")
+				.password(encoder.encode("atendente"))
+				.authorities("SCOPE_ATTENDANT")
+				.build(),
+			User.builder()
+				.username("tecnico")
+				.password(encoder.encode("tecnico"))
+				.authorities("SCOPE_TECHNICIAN")
+				.build(),
+			User.builder()
+				.username("admin")
+				.password(encoder.encode(adminSecret))
+				.authorities("SCOPE_ADMIN")
+				.build(),
+			User.builder()
+				.username("almoxarife")
+				.password(encoder.encode("almoxarife"))
+				.authorities("SCOPE_WAREHOUSE")
+				.build(),
+		)
+		return InMemoryUserDetailsManager(users)
 	}
 
+	/**
+	 * Explícito: com OAuth2 Resource Server no mesmo [SecurityFilterChain], o manager por defeito
+	 * pode não autenticar [UsernamePasswordAuthenticationToken] no /login.
+	 */
 	@Bean
-	fun authenticationManager(config: AuthenticationConfiguration): AuthenticationManager =
-		config.authenticationManager
+	fun authenticationManager(
+		userDetailsService: UserDetailsService,
+		passwordEncoder: PasswordEncoder,
+	): AuthenticationManager {
+		val provider = DaoAuthenticationProvider(userDetailsService)
+		provider.setPasswordEncoder(passwordEncoder)
+		return ProviderManager(provider)
+	}
 
 	@Bean
 	fun securityFilterChain(http: HttpSecurity, jwtDecoder: JwtDecoder): SecurityFilterChain {
@@ -56,8 +86,13 @@ class SecurityConfiguration {
 				"/swagger-ui.html",
 				"/api/public/auth/login",
 			).permitAll()
-			authorize.requestMatchers(HttpMethod.GET, "/api/public/os/**").permitAll()
-			authorize.requestMatchers("/api/admin/**").hasAuthority("SCOPE_ADMIN")
+			authorize.requestMatchers("/api/public/os/**").permitAll()
+			authorize.requestMatchers(
+				"/api/admin/**",
+				"/api/attendant/**",
+				"/api/technician/**",
+				"/api/warehouse/**",
+			).authenticated()
 			authorize.anyRequest().denyAll()
 		}
 		http.oauth2ResourceServer { oauth2 -> oauth2.jwt { it.decoder(jwtDecoder) } }

@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/admin/ordens-servico")
+@RequestMapping("/api/technician/ordens-servico")
 @SecurityRequirement(name = "bearer-jwt")
-@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
-class AdminOrdemServicoController(
+@PreAuthorize("hasAuthority('SCOPE_TECHNICIAN')")
+class TechnicianOrdemServicoController(
 	private val workOrders: OrdemServicoApplicationService,
 ) {
 
@@ -25,11 +25,15 @@ class AdminOrdemServicoController(
 	@GetMapping("/{id}")
 	fun get(@PathVariable id: UUID): OrdemServicoResponse = workOrders.get(id)
 
-	@PostMapping("/{id}/aprovar-interno")
-	fun approveInternal(@PathVariable id: UUID): OrdemServicoResponse =
-		workOrders.approveInternal(id)
+	@PostMapping("/{id}/iniciar-diagnostico")
+	fun startDiagnosis(@PathVariable id: UUID): OrdemServicoResponse =
+		workOrders.startDiagnosis(id)
 
-	@PostMapping("/{id}/reprovar-interno")
-	fun rejectInternal(@PathVariable id: UUID): OrdemServicoResponse =
-		workOrders.rejectInternal(id)
+	@PostMapping("/{id}/submeter-plano")
+	fun submitPlan(@PathVariable id: UUID): OrdemServicoResponse =
+		workOrders.submitPlanForInternalApproval(id)
+
+	@PostMapping("/{id}/concluir-servicos")
+	fun completeServices(@PathVariable id: UUID): OrdemServicoResponse =
+		workOrders.completeServices(id)
 }

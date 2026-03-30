@@ -1,0 +1,469 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-oficina-api",
+		"name": "Oficina — API (manual)",
+		"description": "# Como usar (leia isto primeiro)\n\n## 1. Base URL\nNa coleção: **Variables** → `baseUrl` = `http://localhost:8080` (ou a porta que o Docker mapear).\n\n## 2. Sem token primeiro\nExecute **Health** → `GET actuator/health` (deve responder 200).\n\n## 3. Login\nAbra **Auth (público)** → **Login admin** (ou atendente/técnico/almoxarife) → **Send**.\n- Body JSON: `username` e `password`.\n- **admin** / **admin** — se no Docker o `.env` tiver `APP_SECURITY_ADMIN_PASSWORD`, use esse valor em vez de `admin`.\n- Outros: password igual ao username (`atendente`/`atendente`, etc.).\n- Na resposta, copie o valor de **`accessToken`** (não existe campo `token`).\n\n## 4. Colar o token na variável certa\n**Collection** (clique na raiz) → **Variables**:\n- Depois do login **admin** → cole em **`admin_token`**\n- Login **atendente** → **`attendant_token`**\n- Login **técnico** → **`technician_token`**\n- Login **almoxarife** → **`warehouse_token`**\n\nCada pasta (Admin, Atendente, …) usa o Bearer dessa variável. **Se ficar vazio**, recebe 401.\n\n## 5. Fluxo mínimo Admin + OS\n1. Preencher **`admin_token`** (passo 4).\n2. **Admin → Serviços catálogo → POST criar serviço** → copie o **`id`** da resposta para variável **`servico_id`**.\n3. **Admin → Peças → POST criar peça** → copie **`id`** para **`peca_id`** (use `codigo` único se repetir testes).\n4. Preencher **`attendant_token`**, depois **Atendente → POST criar OS** — precisa de `servico_id` e `peca_id`.\n5. Copie da resposta **`id`** → **`os_id`**, **`codigoAcompanhamento`** → **`codigo_acompanhamento`**.\n\n## 6. Público (sem Bearer)\n**Público — OS** não usa token. Precisa de `documento_cliente` (só dígitos) e `codigo_acompanhamento` preenchidos.\n\n---\nCampos JSON: `precoCentavos`, `documentoCliente`, etc.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "noauth"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:8080" },
+		{ "key": "admin_token", "value": "" },
+		{ "key": "attendant_token", "value": "" },
+		{ "key": "technician_token", "value": "" },
+		{ "key": "warehouse_token", "value": "" },
+		{ "key": "cliente_id", "value": "" },
+		{ "key": "veiculo_id", "value": "" },
+		{ "key": "servico_id", "value": "" },
+		{ "key": "peca_id", "value": "" },
+		{ "key": "os_id", "value": "" },
+		{ "key": "codigo_acompanhamento", "value": "" },
+		{ "key": "documento_cliente", "value": "52998224725" }
+	],
+	"item": [
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "GET actuator/health",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/actuator/health"
+					}
+				}
+			]
+		},
+		{
+			"name": "Auth (público — sem Bearer)",
+			"item": [
+				{
+					"name": "Login admin",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin\"\n}"
+						},
+						"url": "{{baseUrl}}/api/public/auth/login"
+					}
+				},
+				{
+					"name": "Login atendente",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"atendente\",\n  \"password\": \"atendente\"\n}"
+						},
+						"url": "{{baseUrl}}/api/public/auth/login"
+					}
+				},
+				{
+					"name": "Login técnico",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"tecnico\",\n  \"password\": \"tecnico\"\n}"
+						},
+						"url": "{{baseUrl}}/api/public/auth/login"
+					}
+				},
+				{
+					"name": "Login almoxarife",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"almoxarife\",\n  \"password\": \"almoxarife\"\n}"
+						},
+						"url": "{{baseUrl}}/api/public/auth/login"
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin (Bearer: admin_token)",
+			"auth": {
+				"type": "bearer",
+				"bearer": [{ "key": "token", "value": "{{admin_token}}", "type": "string" }]
+			},
+			"item": [
+				{
+					"name": "Clientes",
+					"item": [
+						{
+							"name": "POST criar cliente",
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"documento\": \"529.982.247-25\",\n  \"nome\": \"Maria Silva\",\n  \"email\": \"maria@example.com\",\n  \"telefone\": \"11999998888\"\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/clientes"
+							}
+						},
+						{
+							"name": "GET listar clientes",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/clientes" }
+						},
+						{
+							"name": "GET cliente por id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/clientes/{{cliente_id}}" }
+						},
+						{
+							"name": "PUT atualizar cliente",
+							"request": {
+								"method": "PUT",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"documento\": \"529.982.247-25\",\n  \"nome\": \"Maria Silva Atualizada\",\n  \"email\": \"maria@example.com\",\n  \"telefone\": \"11988887777\"\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/clientes/{{cliente_id}}"
+							}
+						},
+						{
+							"name": "DELETE cliente",
+							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/clientes/{{cliente_id}}" }
+						}
+					]
+				},
+				{
+					"name": "Veículos",
+					"item": [
+						{
+							"name": "POST criar veículo",
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"clienteId\": \"{{cliente_id}}\",\n  \"placa\": \"ABC1D23\",\n  \"marca\": \"Honda\",\n  \"modelo\": \"Civic\",\n  \"ano\": 2020\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/veiculos"
+							}
+						},
+						{
+							"name": "GET listar veículos",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/veiculos" }
+						},
+						{
+							"name": "GET veículo por id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/veiculos/{{veiculo_id}}" }
+						}
+					]
+				},
+				{
+					"name": "Serviços catálogo",
+					"item": [
+						{
+							"name": "POST criar serviço",
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nome\": \"Troca de óleo\",\n  \"descricao\": \"Troca de óleo e filtro\",\n  \"precoCentavos\": 15000,\n  \"tempoEstimadoMinutos\": 30\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/servicos-catalogo"
+							}
+						},
+						{
+							"name": "GET listar serviços",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo" }
+						},
+						{
+							"name": "GET serviço por id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo/{{servico_id}}" }
+						},
+						{
+							"name": "PUT atualizar serviço",
+							"request": {
+								"method": "PUT",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"nome\": \"Troca de óleo (atualizado)\",\n  \"descricao\": \"Inclui filtro\",\n  \"precoCentavos\": 16000,\n  \"tempoEstimadoMinutos\": 35\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/servicos-catalogo/{{servico_id}}"
+							}
+						},
+						{
+							"name": "DELETE serviço",
+							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo/{{servico_id}}" }
+						}
+					]
+				},
+				{
+					"name": "Peças",
+					"item": [
+						{
+							"name": "POST criar peça",
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"codigo\": \"FILTRO-01\",\n  \"nome\": \"Filtro de óleo\",\n  \"precoCentavos\": 4500,\n  \"quantidadeEstoque\": 50,\n  \"pontoReposicao\": 10\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/pecas"
+							}
+						},
+						{
+							"name": "GET listar peças",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/pecas" }
+						},
+						{
+							"name": "GET peça por id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}" }
+						},
+						{
+							"name": "POST entrada mercadoria",
+							"request": {
+								"method": "POST",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"quantidade\": 20,\n  \"referencia\": \"NF-12345\"\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}/entrada-mercadoria"
+							}
+						},
+						{
+							"name": "PUT atualizar peça",
+							"request": {
+								"method": "PUT",
+								"header": [{ "key": "Content-Type", "value": "application/json" }],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"codigo\": \"FILTRO-01\",\n  \"nome\": \"Filtro de óleo premium\",\n  \"precoCentavos\": 5000,\n  \"quantidadeEstoque\": 70,\n  \"pontoReposicao\": 12\n}"
+								},
+								"url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}"
+							}
+						},
+						{
+							"name": "DELETE peça",
+							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}" }
+						}
+					]
+				},
+				{
+					"name": "Ordens de serviço",
+					"item": [
+						{
+							"name": "GET listar OS",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/ordens-servico" }
+						},
+						{
+							"name": "GET OS por id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/ordens-servico/{{os_id}}" }
+						},
+						{
+							"name": "POST aprovar plano interno",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "{{baseUrl}}/api/admin/ordens-servico/{{os_id}}/aprovar-interno"
+							}
+						},
+						{
+							"name": "POST reprovar plano interno",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"url": "{{baseUrl}}/api/admin/ordens-servico/{{os_id}}/reprovar-interno"
+							}
+						}
+					]
+				},
+				{
+					"name": "Métricas",
+					"item": [
+						{
+							"name": "GET tempo médio execução serviços",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": "{{baseUrl}}/api/admin/metricas/tempo-medio-execucao-servicos"
+							}
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "Atendente (Bearer: attendant_token)",
+			"auth": {
+				"type": "bearer",
+				"bearer": [{ "key": "token", "value": "{{attendant_token}}", "type": "string" }]
+			},
+			"item": [
+				{
+					"name": "POST criar OS",
+					"request": {
+						"method": "POST",
+						"header": [{ "key": "Content-Type", "value": "application/json" }],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"documentoCliente\": \"529.982.247-25\",\n  \"nomeCliente\": \"Maria Silva\",\n  \"placa\": \"ABC1D23\",\n  \"marca\": \"Honda\",\n  \"modelo\": \"Civic\",\n  \"anoVeiculo\": 2020,\n  \"servicos\": [\n    { \"servicoCatalogoId\": \"{{servico_id}}\", \"quantidade\": 1 }\n  ],\n  \"pecas\": [\n    { \"pecaId\": \"{{peca_id}}\", \"quantidade\": 2 }\n  ]\n}"
+						},
+						"url": "{{baseUrl}}/api/attendant/ordens-servico"
+					}
+				},
+				{
+					"name": "GET listar OS",
+					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/attendant/ordens-servico" }
+				},
+				{
+					"name": "GET OS por id",
+					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/attendant/ordens-servico/{{os_id}}" }
+				},
+				{
+					"name": "POST enviar orçamento ao cliente",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/attendant/ordens-servico/{{os_id}}/enviar-orcamento-cliente"
+					}
+				},
+				{
+					"name": "POST voltar ao diagnóstico",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/attendant/ordens-servico/{{os_id}}/voltar-diagnostico"
+					}
+				},
+				{
+					"name": "POST registrar entrega",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/attendant/ordens-servico/{{os_id}}/registrar-entrega"
+					}
+				}
+			]
+		},
+		{
+			"name": "Técnico (Bearer: technician_token)",
+			"auth": {
+				"type": "bearer",
+				"bearer": [{ "key": "token", "value": "{{technician_token}}", "type": "string" }]
+			},
+			"item": [
+				{
+					"name": "GET listar OS",
+					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/technician/ordens-servico" }
+				},
+				{
+					"name": "GET OS por id",
+					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/technician/ordens-servico/{{os_id}}" }
+				},
+				{
+					"name": "POST iniciar diagnóstico",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/technician/ordens-servico/{{os_id}}/iniciar-diagnostico"
+					}
+				},
+				{
+					"name": "POST submeter plano",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/technician/ordens-servico/{{os_id}}/submeter-plano"
+					}
+				},
+				{
+					"name": "POST concluir serviços",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/technician/ordens-servico/{{os_id}}/concluir-servicos"
+					}
+				}
+			]
+		},
+		{
+			"name": "Almoxarife (Bearer: warehouse_token)",
+			"auth": {
+				"type": "bearer",
+				"bearer": [{ "key": "token", "value": "{{warehouse_token}}", "type": "string" }]
+			},
+			"item": [
+				{
+					"name": "GET reservas pendentes (por OS)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/warehouse/ordens-servico/{{os_id}}/reservas-pendentes"
+					}
+				},
+				{
+					"name": "POST confirmar saída (por OS)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/warehouse/ordens-servico/{{os_id}}/confirmar-saida"
+					}
+				},
+				{
+					"name": "GET alertas estoque baixo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/warehouse/alertas-estoque-baixo"
+					}
+				}
+			]
+		},
+		{
+			"name": "Público — OS (sem Bearer)",
+			"auth": { "type": "noauth" },
+			"item": [
+				{
+					"name": "GET acompanhar OS",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "GET",
+						"header": [],
+						"url": "{{baseUrl}}/api/public/os/acompanhar?documento={{documento_cliente}}&codigo={{codigo_acompanhamento}}"
+					}
+				},
+				{
+					"name": "POST aprovar orçamento",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/public/os/aprovar-orcamento?documento={{documento_cliente}}&codigo={{codigo_acompanhamento}}"
+					}
+				},
+				{
+					"name": "POST reprovar orçamento",
+					"request": {
+						"auth": { "type": "noauth" },
+						"method": "POST",
+						"header": [],
+						"url": "{{baseUrl}}/api/public/os/reprovar-orcamento?documento={{documento_cliente}}&codigo={{codigo_acompanhamento}}"
+					}
+				}
+			]
+		}
+	]
+}

@@ -19,4 +19,6 @@ class PecaEntity(
 	var priceCents: Long = 0,
 	@Column(nullable = false, name = "quantidade_estoque")
 	var stockQuantity: Int = 0,
+	@Column(name = "ponto_reposicao")
+	var replenishmentPoint: Int? = null,
 )

@@ -47,11 +47,14 @@ class OrdemServicoRepositoryAdapter(
 		e.partsTotalCents = ordem.partsTotalCents
 		e.totalCents = ordem.totalCents
 		e.diagnosedAt = ordem.diagnosedAt
+		e.planSubmittedAt = ordem.planSubmittedAt
+		e.internalApprovedAt = ordem.internalApprovedAt
 		e.quoteSentAt = ordem.quoteSentAt
 		e.approvedAt = ordem.approvedAt
 		e.workStartedAt = ordem.workStartedAt
 		e.completedAt = ordem.completedAt
 		e.deliveredAt = ordem.deliveredAt
+		e.cancelledAt = ordem.cancelledAt
 		e.serviceLines.clear()
 		e.partLines.clear()
 		for (l in ordem.serviceLines) {

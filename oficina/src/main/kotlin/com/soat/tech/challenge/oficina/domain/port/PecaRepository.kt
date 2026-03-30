@@ -9,5 +9,9 @@ interface PecaRepository {
 	fun findById(id: UUID): Optional<Peca>
 	fun findByCode(code: String): Optional<Peca>
 	fun findAll(): List<Peca>
+
+	/** Parts with replenishment point set and physical stock at or below that point. */
+	fun findAllAtOrBelowReplenishment(): List<Peca>
+
 	fun deleteById(id: UUID)
 }

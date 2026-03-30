@@ -27,7 +27,7 @@ data class LinhaPecaOrdem(
 }
 
 /**
- * Work order (aggregate): quote derived from lines; explicit state machine.
+ * Work order (aggregate): quote derived from lines; explicit state machine (swimlane).
  */
 data class OrdemServico(
 	val id: UUID,
@@ -41,11 +41,17 @@ data class OrdemServico(
 	var partsTotalCents: Long,
 	var totalCents: Long,
 	var diagnosedAt: Instant? = null,
+	/** Technician submitted plan; reservations created in application layer. */
+	var planSubmittedAt: Instant? = null,
+	/** Administrator approved internal execution. */
+	var internalApprovedAt: Instant? = null,
 	var quoteSentAt: Instant? = null,
+	/** Customer approved quote (starts execution / monitoring). */
 	var approvedAt: Instant? = null,
 	var workStartedAt: Instant? = null,
 	var completedAt: Instant? = null,
 	var deliveredAt: Instant? = null,
+	var cancelledAt: Instant? = null,
 ) {
 
 	fun recalculateQuote() {
@@ -66,24 +72,58 @@ data class OrdemServico(
 		diagnosedAt = now
 	}
 
-	fun sendQuote(now: Instant) {
-		requireStatus(StatusOrdemServico.EM_DIAGNOSTICO, "sendQuote")
+	/** Technician: end diagnosis, submit plan and trigger stock reservation. */
+	fun submitPlanForInternalApproval(now: Instant) {
+		requireStatus(StatusOrdemServico.EM_DIAGNOSTICO, "submitPlanForInternalApproval")
+		recalculateQuote()
+		status = StatusOrdemServico.AGUARDANDO_APROVACAO_INTERNA
+		planSubmittedAt = now
+		internalApprovedAt = null
+	}
+
+	/** Administrator: reject internal plan. */
+	fun rejectInternal(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO_INTERNA, "rejectInternal")
+		status = StatusOrdemServico.CANCELADA
+		cancelledAt = now
+	}
+
+	/** Administrator: approve internal execution (attendant may send quote to customer). */
+	fun approveInternal(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO_INTERNA, "approveInternal")
+		internalApprovedAt = now
+	}
+
+	/** Attendant: send quote to customer (after internal approval). */
+	fun sendQuoteToCustomer(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO_INTERNA, "sendQuoteToCustomer")
+		require(internalApprovedAt != null) { "Internal approval required before sending quote to customer" }
 		recalculateQuote()
 		status = StatusOrdemServico.AGUARDANDO_APROVACAO
 		quoteSentAt = now
 	}
 
-	fun approveQuote(now: Instant) {
-		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "approveQuote")
+	/** Customer approves quote (public API). */
+	fun approveCustomerQuote(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "approveCustomerQuote")
 		status = StatusOrdemServico.EM_EXECUCAO
 		approvedAt = now
 		workStartedAt = now
+	}
+
+	/** Customer rejects quote (public API). */
+	fun rejectCustomerQuote(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "rejectCustomerQuote")
+		status = StatusOrdemServico.CANCELADA
+		cancelledAt = now
 	}
 
 	fun returnToDiagnosis(now: Instant) {
 		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "returnToDiagnosis")
 		status = StatusOrdemServico.EM_DIAGNOSTICO
 		quoteSentAt = null
+		internalApprovedAt = null
+		planSubmittedAt = null
 	}
 
 	fun completeServices(now: Instant) {

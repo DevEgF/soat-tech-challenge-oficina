@@ -45,6 +45,7 @@ fun Peca.toResponse(): PecaResponse = PecaResponse(
 	name = name,
 	priceCents = priceCents,
 	stockQuantity = stockQuantity,
+	replenishmentPoint = replenishmentPoint,
 )
 
 fun OrdemServico.toResponse(

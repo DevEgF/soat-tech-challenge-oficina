@@ -5,7 +5,7 @@ Este documento serve de base para o PDF de entrega. Preencha as seções **Resul
 ## 1. Escopo
 
 - **Código:** repositório `oficina` (Kotlin / Spring Boot).
-- **Imagem de runtime:** `eclipse-temurin:17-jre-alpine` (vide [Dockerfile](../Dockerfile)).
+- **Imagem de runtime:** `eclipse-temurin:17-jre-alpine` (vide [Dockerfile](../../Dockerfile)).
 - **Dependências:** Maven Central / Gradle (BOM Spring Boot).
 
 ## 2. Ferramentas sugeridas

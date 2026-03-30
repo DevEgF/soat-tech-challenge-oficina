@@ -20,6 +20,7 @@ class PecaRepositoryAdapter(
 			name = peca.name,
 			priceCents = peca.priceCents,
 			stockQuantity = peca.stockQuantity,
+			replenishmentPoint = peca.replenishmentPoint,
 		)
 		return jpa.save(e).toDomain()
 	}
@@ -31,6 +32,9 @@ class PecaRepositoryAdapter(
 		Optional.ofNullable(jpa.findByCode(code)).map { it.toDomain() }
 
 	override fun findAll(): List<Peca> = jpa.findAll().map { it.toDomain() }
+
+	override fun findAllAtOrBelowReplenishment(): List<Peca> =
+		jpa.findAtOrBelowReplenishment().map { it.toDomain() }
 
 	override fun deleteById(id: UUID) {
 		jpa.deleteById(id.toString())

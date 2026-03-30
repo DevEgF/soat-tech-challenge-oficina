@@ -35,6 +35,10 @@ class OrdemServicoEntity(
 	var totalCents: Long = 0,
 	@Column(name = "diagnosticado_em")
 	var diagnosedAt: Instant? = null,
+	@Column(name = "plano_submetido_em")
+	var planSubmittedAt: Instant? = null,
+	@Column(name = "aprovacao_interna_em")
+	var internalApprovedAt: Instant? = null,
 	@Column(name = "orcamento_enviado_em")
 	var quoteSentAt: Instant? = null,
 	@Column(name = "aprovado_em")
@@ -45,6 +49,8 @@ class OrdemServicoEntity(
 	var completedAt: Instant? = null,
 	@Column(name = "entregue_em")
 	var deliveredAt: Instant? = null,
+	@Column(name = "cancelada_em")
+	var cancelledAt: Instant? = null,
 	@OneToMany(mappedBy = "workOrder", cascade = [CascadeType.ALL], orphanRemoval = true)
 	var serviceLines: MutableSet<OrdemServicoLinhaServicoEntity> = mutableSetOf(),
 	@OneToMany(mappedBy = "workOrder", cascade = [CascadeType.ALL], orphanRemoval = true)

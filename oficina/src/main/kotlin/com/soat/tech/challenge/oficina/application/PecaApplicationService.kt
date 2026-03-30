@@ -1,5 +1,6 @@
 package com.soat.tech.challenge.oficina.application
 
+import com.soat.tech.challenge.oficina.application.api.dto.EntradaMercadoriaRequest
 import com.soat.tech.challenge.oficina.application.api.dto.PecaRequest
 import com.soat.tech.challenge.oficina.application.api.dto.PecaResponse
 import com.soat.tech.challenge.oficina.application.api.toResponse
@@ -24,6 +25,7 @@ class PecaApplicationService(
 			name = req.name.trim(),
 			priceCents = req.priceCents!!,
 			stockQuantity = req.stockQuantity!!,
+			replenishmentPoint = req.replenishmentPoint,
 		)
 		return parts.save(p).toResponse()
 	}
@@ -47,7 +49,16 @@ class PecaApplicationService(
 			name = req.name.trim(),
 			priceCents = req.priceCents!!,
 			stockQuantity = req.stockQuantity!!,
+			replenishmentPoint = req.replenishmentPoint,
 		)
+		return parts.save(updated).toResponse()
+	}
+
+	@Transactional
+	fun recordGoodsReceipt(id: UUID, req: EntradaMercadoriaRequest): PecaResponse {
+		val existing = parts.findById(id).orElseThrow { NotFoundException("Part not found") }
+		val qty = req.quantity!!
+		val updated = existing.withAdjustedStock(qty)
 		return parts.save(updated).toResponse()
 	}
 

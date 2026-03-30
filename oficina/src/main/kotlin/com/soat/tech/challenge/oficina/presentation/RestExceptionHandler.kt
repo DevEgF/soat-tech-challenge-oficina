@@ -45,6 +45,10 @@ class RestExceptionHandler {
 	fun conflictDomain(e: DomainException) =
 		ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorBody(e.message ?: "Business rule violation"))
 
+	@ExceptionHandler(IllegalStateException::class)
+	fun conflictState(e: IllegalStateException) =
+		ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorBody(e.message ?: "Invalid state"))
+
 	@ExceptionHandler(BadCredentialsException::class)
 	fun unauthorized(e: BadCredentialsException) =
 		ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ErrorBody("Invalid credentials"))

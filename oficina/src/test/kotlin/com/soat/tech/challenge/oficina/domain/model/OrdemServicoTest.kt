@@ -5,6 +5,7 @@ import java.time.Instant
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -19,7 +20,7 @@ class OrdemServicoTest {
 	inner class GivenNewWorkOrder {
 
 		@Test
-		@DisplayName("when full happy path then status reaches ENTREGUE")
+		@DisplayName("when full swimlane happy path then status reaches ENTREGUE")
 		fun happyPath() {
 			val wo = OrdemServico.create(
 				customerId = UUID.randomUUID(),
@@ -32,14 +33,51 @@ class OrdemServicoTest {
 			assertEquals(StatusOrdemServico.RECEBIDA, wo.status)
 			wo.startDiagnosis(t0)
 			assertEquals(StatusOrdemServico.EM_DIAGNOSTICO, wo.status)
-			wo.sendQuote(t0.plusSeconds(60))
+			wo.submitPlanForInternalApproval(t0.plusSeconds(60))
+			assertEquals(StatusOrdemServico.AGUARDANDO_APROVACAO_INTERNA, wo.status)
+			wo.approveInternal(t0.plusSeconds(90))
+			assertNotNull(wo.internalApprovedAt)
+			wo.sendQuoteToCustomer(t0.plusSeconds(120))
 			assertEquals(StatusOrdemServico.AGUARDANDO_APROVACAO, wo.status)
-			wo.approveQuote(t0.plusSeconds(120))
+			wo.approveCustomerQuote(t0.plusSeconds(150))
 			assertEquals(StatusOrdemServico.EM_EXECUCAO, wo.status)
 			wo.completeServices(t0.plusSeconds(180))
 			assertEquals(StatusOrdemServico.FINALIZADA, wo.status)
 			wo.registerDelivery(t0.plusSeconds(240))
 			assertEquals(StatusOrdemServico.ENTREGUE, wo.status)
+		}
+
+		@Test
+		@DisplayName("when internal reject then CANCELADA")
+		fun internalReject() {
+			val wo = OrdemServico.create(
+				customerId = UUID.randomUUID(),
+				vehicleId = UUID.randomUUID(),
+				serviceLines = listOf(LinhaServicoOrdem(UUID.randomUUID(), 1, 100)),
+				partLines = emptyList(),
+			)
+			wo.startDiagnosis(t0)
+			wo.submitPlanForInternalApproval(t0.plusSeconds(1))
+			wo.rejectInternal(t0.plusSeconds(2))
+			assertEquals(StatusOrdemServico.CANCELADA, wo.status)
+			assertNotNull(wo.cancelledAt)
+		}
+
+		@Test
+		@DisplayName("when customer rejects quote then CANCELADA")
+		fun customerReject() {
+			val wo = OrdemServico.create(
+				customerId = UUID.randomUUID(),
+				vehicleId = UUID.randomUUID(),
+				serviceLines = listOf(LinhaServicoOrdem(UUID.randomUUID(), 1, 100)),
+				partLines = emptyList(),
+			)
+			wo.startDiagnosis(t0)
+			wo.submitPlanForInternalApproval(t0.plusSeconds(1))
+			wo.approveInternal(t0.plusSeconds(2))
+			wo.sendQuoteToCustomer(t0.plusSeconds(3))
+			wo.rejectCustomerQuote(t0.plusSeconds(4))
+			assertEquals(StatusOrdemServico.CANCELADA, wo.status)
 		}
 	}
 
@@ -48,8 +86,8 @@ class OrdemServicoTest {
 	inner class GivenReceived {
 
 		@Test
-		@DisplayName("when sendQuote without diagnosis then throws")
-		fun sendQuoteWithoutDiagnosis() {
+		@DisplayName("when submitPlan without diagnosis then throws")
+		fun submitPlanWithoutDiagnosis() {
 			val wo = OrdemServico.create(
 				customerId = UUID.randomUUID(),
 				vehicleId = UUID.randomUUID(),
@@ -57,7 +95,28 @@ class OrdemServicoTest {
 				partLines = emptyList(),
 			)
 			assertFailsWith<InvalidStatusTransitionException> {
-				wo.sendQuote(t0)
+				wo.submitPlanForInternalApproval(t0)
+			}
+		}
+	}
+
+	@Nested
+	@DisplayName("Given AGUARDANDO_APROVACAO_INTERNA without internal approval")
+	inner class GivenInternalPending {
+
+		@Test
+		@DisplayName("when sendQuoteToCustomer without approveInternal then throws")
+		fun sendQuoteWithoutInternalApproval() {
+			val wo = OrdemServico.create(
+				customerId = UUID.randomUUID(),
+				vehicleId = UUID.randomUUID(),
+				serviceLines = listOf(LinhaServicoOrdem(UUID.randomUUID(), 1, 100)),
+				partLines = emptyList(),
+			)
+			wo.startDiagnosis(t0)
+			wo.submitPlanForInternalApproval(t0.plusSeconds(1))
+			assertFailsWith<IllegalArgumentException> {
+				wo.sendQuoteToCustomer(t0.plusSeconds(2))
 			}
 		}
 	}

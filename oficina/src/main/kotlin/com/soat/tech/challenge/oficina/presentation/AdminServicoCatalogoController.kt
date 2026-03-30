@@ -5,6 +5,7 @@ import com.soat.tech.challenge.oficina.application.api.dto.ServicoCatalogoReques
 import com.soat.tech.challenge.oficina.application.api.dto.ServicoCatalogoResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.Valid
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -20,6 +21,7 @@ import java.util.UUID
 @RestController
 @RequestMapping("/api/admin/servicos-catalogo")
 @SecurityRequirement(name = "bearer-jwt")
+@PreAuthorize("hasAuthority('SCOPE_ADMIN')")
 class AdminServicoCatalogoController(
 	private val catalogServices: ServicoCatalogoApplicationService,
 ) {

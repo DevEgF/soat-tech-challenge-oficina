@@ -1,5 +1,6 @@
 package com.soat.tech.challenge.oficina.application
 
+import com.soat.tech.challenge.oficina.application.api.dto.EntradaMercadoriaRequest
 import com.soat.tech.challenge.oficina.application.api.dto.PecaRequest
 import com.soat.tech.challenge.oficina.domain.model.Peca
 import com.soat.tech.challenge.oficina.domain.port.PecaRepository
@@ -62,6 +63,78 @@ class PecaApplicationServiceTest {
 			every { repo.save(any()) } answers { firstArg() }
 			val out = service.update(id, PecaRequest(code = "P2", name = "N2", priceCents = 6, stockQuantity = 2))
 			assertEquals(6, out.priceCents)
+		}
+	}
+
+	@Nested
+	@DisplayName("recordGoodsReceipt")
+	inner class GoodsReceipt {
+
+		@Test
+		@DisplayName("when part exists then increases stock")
+		fun receipt() {
+			val id = UUID.randomUUID()
+			val p = Peca(id, "P1", "N", 5, 10)
+			every { repo.findById(id) } returns Optional.of(p)
+			every { repo.save(any()) } answers { firstArg() }
+			val out = service.recordGoodsReceipt(id, EntradaMercadoriaRequest(quantity = 3, reference = "NF-1"))
+			assertEquals(13, out.stockQuantity)
+		}
+
+		@Test
+		@DisplayName("when part missing then NotFoundException")
+		fun missing() {
+			val id = UUID.randomUUID()
+			every { repo.findById(id) } returns Optional.empty()
+			assertFailsWith<NotFoundException> {
+				service.recordGoodsReceipt(id, EntradaMercadoriaRequest(quantity = 1))
+			}
+		}
+	}
+
+	@Nested
+	@DisplayName("list and get")
+	inner class ListGet {
+
+		@Test
+		fun list() {
+			val id = UUID.randomUUID()
+			every { repo.findAll() } returns listOf(Peca(id, "A", "B", 1, 0))
+			assertEquals(1, service.list().size)
+		}
+
+		@Test
+		fun get() {
+			val id = UUID.randomUUID()
+			every { repo.findById(id) } returns Optional.of(Peca(id, "A", "B", 1, 0))
+			assertEquals("A", service.get(id).code)
+		}
+
+		@Test
+		fun getMissing() {
+			val id = UUID.randomUUID()
+			every { repo.findById(id) } returns Optional.empty()
+			assertFailsWith<NotFoundException> { service.get(id) }
+		}
+	}
+
+	@Nested
+	@DisplayName("delete")
+	inner class DeletePart {
+
+		@Test
+		fun ok() {
+			val id = UUID.randomUUID()
+			every { repo.findById(id) } returns Optional.of(Peca(id, "A", "B", 1, 0))
+			every { repo.deleteById(id) } returns Unit
+			service.delete(id)
+		}
+
+		@Test
+		fun missing() {
+			val id = UUID.randomUUID()
+			every { repo.findById(id) } returns Optional.empty()
+			assertFailsWith<NotFoundException> { service.delete(id) }
 		}
 	}
 }
