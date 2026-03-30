@@ -4,7 +4,7 @@ import com.soat.tech.challenge.oficina.application.api.dto.AcompanhamentoOsRespo
 import com.soat.tech.challenge.oficina.application.api.dto.CriarOrdemServicoRequest
 import com.soat.tech.challenge.oficina.application.api.dto.OrdemServicoResponse
 import com.soat.tech.challenge.oficina.application.api.toResponse
-import com.soat.tech.challenge.oficina.domain.exception.EstoqueInsuficienteException
+import com.soat.tech.challenge.oficina.domain.exception.InsufficientStockException
 import com.soat.tech.challenge.oficina.domain.model.Cliente
 import com.soat.tech.challenge.oficina.domain.model.DocumentoFiscal
 import com.soat.tech.challenge.oficina.domain.model.LinhaPecaOrdem
@@ -24,164 +24,164 @@ import java.util.UUID
 
 @Service
 class OrdemServicoApplicationService(
-	private val ordens: OrdemServicoRepository,
-	private val clientes: ClienteRepository,
-	private val veiculos: VeiculoRepository,
-	private val servicosCatalogo: ServicoCatalogoRepository,
-	private val pecas: PecaRepository,
+	private val workOrders: OrdemServicoRepository,
+	private val customers: ClienteRepository,
+	private val vehicles: VeiculoRepository,
+	private val catalogServices: ServicoCatalogoRepository,
+	private val parts: PecaRepository,
 	private val clock: Clock,
 ) {
 
-	private fun catalogoNome(id: UUID): String? =
-		servicosCatalogo.findById(id).map { it.nome }.orElse(null)
+	private fun catalogServiceName(id: UUID): String? =
+		catalogServices.findById(id).map { it.name }.orElse(null)
 
-	private fun pecaNome(id: UUID): String? =
-		pecas.findById(id).map { it.nome }.orElse(null)
+	private fun partName(id: UUID): String? =
+		parts.findById(id).map { it.name }.orElse(null)
 
 	private fun OrdemServico.toDto(): OrdemServicoResponse =
-		toResponse({ catalogoNome(it) }, { pecaNome(it) })
+		toResponse({ catalogServiceName(it) }, { partName(it) })
 
 	@Transactional
-	fun criar(req: CriarOrdemServicoRequest): OrdemServicoResponse {
-		val doc = DocumentoFiscal.parse(req.documentoCliente)
-		val cliente = clientes.findByDocumento(doc).orElseGet {
-			clientes.save(
+	fun create(req: CriarOrdemServicoRequest): OrdemServicoResponse {
+		val doc = DocumentoFiscal.parse(req.customerTaxIdDigits)
+		val customer = customers.findByFiscalDocument(doc).orElseGet {
+			customers.save(
 				Cliente(
 					id = UUID.randomUUID(),
-					documento = doc,
-					nome = req.nomeCliente.trim(),
-					email = req.emailCliente?.trim()?.takeIf { it.isNotEmpty() },
-					telefone = req.telefoneCliente?.trim()?.takeIf { it.isNotEmpty() },
+					fiscalDocument = doc,
+					name = req.customerName.trim(),
+					email = req.customerEmail?.trim()?.takeIf { it.isNotEmpty() },
+					phone = req.customerPhone?.trim()?.takeIf { it.isNotEmpty() },
 				),
 			)
 		}
-		val placa = PlacaVeiculo.parse(req.placa)
-		val veiculo = veiculos.findByPlaca(placa).orElseGet {
-			veiculos.save(
+		val plate = PlacaVeiculo.parse(req.plate)
+		val vehicle = vehicles.findByLicensePlate(plate).orElseGet {
+			vehicles.save(
 				Veiculo(
 					id = UUID.randomUUID(),
-					clienteId = cliente.id,
-					placa = placa,
-					marca = req.marca.trim(),
-					modelo = req.modelo.trim(),
-					ano = req.anoVeiculo!!,
+					customerId = customer.id,
+					licensePlate = plate,
+					brand = req.vehicleBrand.trim(),
+					model = req.vehicleModel.trim(),
+					year = req.vehicleYear!!,
 				),
 			)
 		}
-		if (veiculo.clienteId != cliente.id) {
-			throw IllegalArgumentException("Veículo pertence a outro cliente")
+		if (vehicle.customerId != customer.id) {
+			throw IllegalArgumentException("Vehicle belongs to another customer")
 		}
-		val linhasServico = req.servicos.map { s ->
-			val cat = servicosCatalogo.findById(s.servicoCatalogoId!!)
-				.orElseThrow { NotFoundException("Serviço de catálogo não encontrado") }
+		val serviceLines = req.services.map { s ->
+			val cat = catalogServices.findById(s.catalogServiceId!!)
+				.orElseThrow { NotFoundException("Catalog service not found") }
 			LinhaServicoOrdem(
-				servicoCatalogoId = cat.id,
-				quantidade = s.quantidade!!,
-				precoUnitarioCentavos = cat.precoCentavos,
+				catalogServiceId = cat.id,
+				quantity = s.quantity!!,
+				unitPriceCents = cat.priceCents,
 			)
 		}
-		val linhasPeca = req.pecas.map { p ->
-			val peca = pecas.findById(p.pecaId!!)
-				.orElseThrow { NotFoundException("Peça não encontrada") }
+		val partLines = req.parts.map { p ->
+			val part = parts.findById(p.partId!!)
+				.orElseThrow { NotFoundException("Part not found") }
 			LinhaPecaOrdem(
-				pecaId = peca.id,
-				quantidade = p.quantidade!!,
-				precoUnitarioCentavos = peca.precoCentavos,
+				partId = part.id,
+				quantity = p.quantity!!,
+				unitPriceCents = part.priceCents,
 			)
 		}
-		val os = OrdemServico.nova(
-			clienteId = cliente.id,
-			veiculoId = veiculo.id,
-			linhasServico = linhasServico,
-			linhasPeca = linhasPeca,
+		val wo = OrdemServico.create(
+			customerId = customer.id,
+			vehicleId = vehicle.id,
+			serviceLines = serviceLines,
+			partLines = partLines,
 		)
-		return ordens.save(os).toDto()
+		return workOrders.save(wo).toDto()
 	}
 
 	@Transactional(readOnly = true)
-	fun listar(): List<OrdemServicoResponse> = ordens.findAll().map { it.toDto() }
+	fun list(): List<OrdemServicoResponse> = workOrders.findAll().map { it.toDto() }
 
 	@Transactional(readOnly = true)
-	fun obter(id: UUID): OrdemServicoResponse =
-		ordens.findById(id).map { it.toDto() }.orElseThrow { NotFoundException("Ordem de serviço não encontrada") }
+	fun get(id: UUID): OrdemServicoResponse =
+		workOrders.findById(id).map { it.toDto() }.orElseThrow { NotFoundException("Work order not found") }
 
 	@Transactional(readOnly = true)
-	fun acompanhar(documentoCliente: String, codigoAcompanhamento: String): AcompanhamentoOsResponse {
-		val doc = DocumentoFiscal.parse(documentoCliente)
-		val os = ordens.findByCodigoAcompanhamento(codigoAcompanhamento.trim())
-			.orElseThrow { NotFoundException("Ordem não encontrada") }
-		val cliente = clientes.findById(os.clienteId).orElseThrow { NotFoundException("Cliente não encontrado") }
-		if (cliente.documento.digitos != doc.digitos) {
-			throw IllegalArgumentException("Documento não confere com a ordem")
+	fun track(customerTaxIdDigits: String, trackingCode: String): AcompanhamentoOsResponse {
+		val doc = DocumentoFiscal.parse(customerTaxIdDigits)
+		val wo = workOrders.findByTrackingCode(trackingCode.trim())
+			.orElseThrow { NotFoundException("Work order not found") }
+		val customer = customers.findById(wo.customerId).orElseThrow { NotFoundException("Customer not found") }
+		if (customer.fiscalDocument.digits != doc.digits) {
+			throw IllegalArgumentException("Document does not match this work order")
 		}
-		val veiculo = veiculos.findById(os.veiculoId).orElseThrow { NotFoundException("Veículo não encontrado") }
+		val vehicle = vehicles.findById(wo.vehicleId).orElseThrow { NotFoundException("Vehicle not found") }
 		return AcompanhamentoOsResponse(
-			codigoAcompanhamento = os.codigoAcompanhamento,
-			status = os.status,
-			valorTotalCentavos = os.valorTotalCentavos,
-			placaVeiculo = veiculo.placa.normalizada,
-			documentoClienteMascarado = mascararDocumento(doc.digitos),
+			trackingCode = wo.trackingCode,
+			status = wo.status,
+			totalCents = wo.totalCents,
+			vehiclePlate = vehicle.licensePlate.normalized,
+			maskedCustomerTaxId = maskTaxId(doc.digits),
 		)
 	}
 
-	private fun mascararDocumento(d: String): String = when (d.length) {
+	private fun maskTaxId(d: String): String = when (d.length) {
 		11 -> "***.${d.take(3)}.${d.substring(3, 6)}-**"
 		14 -> "**.${d.substring(2, 5)}.${d.substring(5, 8)}/****-**"
 		else -> "***"
 	}
 
-	private fun agora() = clock.instant()
+	private fun now() = clock.instant()
 
 	@Transactional
-	fun iniciarDiagnostico(id: UUID): OrdemServicoResponse {
-		val os = ordens.findById(id).orElseThrow { NotFoundException("Ordem não encontrada") }
-		os.iniciarDiagnostico(agora())
-		return ordens.save(os).toDto()
+	fun startDiagnosis(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.startDiagnosis(now())
+		return workOrders.save(wo).toDto()
 	}
 
 	@Transactional
-	fun enviarOrcamento(id: UUID): OrdemServicoResponse {
-		val os = ordens.findById(id).orElseThrow { NotFoundException("Ordem não encontrada") }
-		os.enviarOrcamento(agora())
-		return ordens.save(os).toDto()
+	fun sendQuote(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.sendQuote(now())
+		return workOrders.save(wo).toDto()
 	}
 
 	@Transactional
-	fun aprovarOrcamento(id: UUID): OrdemServicoResponse {
-		val os = ordens.findById(id).orElseThrow { NotFoundException("Ordem não encontrada") }
-		baixarEstoque(os)
-		os.aprovarOrcamento(agora())
-		return ordens.save(os).toDto()
+	fun approveQuote(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		deductStock(wo)
+		wo.approveQuote(now())
+		return workOrders.save(wo).toDto()
 	}
 
-	private fun baixarEstoque(os: OrdemServico) {
-		for (linha in os.linhasPeca) {
-			val peca = pecas.findById(linha.pecaId).orElseThrow { NotFoundException("Peça não encontrada") }
-			if (peca.quantidadeEstoque < linha.quantidade) {
-				throw EstoqueInsuficienteException(linha.pecaId.toString(), linha.quantidade, peca.quantidadeEstoque)
+	private fun deductStock(wo: OrdemServico) {
+		for (line in wo.partLines) {
+			val part = parts.findById(line.partId).orElseThrow { NotFoundException("Part not found") }
+			if (part.stockQuantity < line.quantity) {
+				throw InsufficientStockException(line.partId.toString(), line.quantity, part.stockQuantity)
 			}
-			pecas.save(peca.comEstoqueAjustado(-linha.quantidade))
+			parts.save(part.withAdjustedStock(-line.quantity))
 		}
 	}
 
 	@Transactional
-	fun voltarParaDiagnostico(id: UUID): OrdemServicoResponse {
-		val os = ordens.findById(id).orElseThrow { NotFoundException("Ordem não encontrada") }
-		os.voltarParaDiagnostico(agora())
-		return ordens.save(os).toDto()
+	fun returnToDiagnosis(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.returnToDiagnosis(now())
+		return workOrders.save(wo).toDto()
 	}
 
 	@Transactional
-	fun concluirServicos(id: UUID): OrdemServicoResponse {
-		val os = ordens.findById(id).orElseThrow { NotFoundException("Ordem não encontrada") }
-		os.concluirServicos(agora())
-		return ordens.save(os).toDto()
+	fun completeServices(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.completeServices(now())
+		return workOrders.save(wo).toDto()
 	}
 
 	@Transactional
-	fun registrarEntrega(id: UUID): OrdemServicoResponse {
-		val os = ordens.findById(id).orElseThrow { NotFoundException("Ordem não encontrada") }
-		os.registrarEntrega(agora())
-		return ordens.save(os).toDto()
+	fun registerDelivery(id: UUID): OrdemServicoResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.registerDelivery(now())
+		return workOrders.save(wo).toDto()
 	}
 }

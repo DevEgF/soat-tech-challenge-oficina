@@ -16,63 +16,63 @@ import java.util.UUID
 
 fun Cliente.toResponse(): ClienteResponse = ClienteResponse(
 	id = id,
-	documento = documento.digitos,
-	nome = nome,
+	taxIdDigits = fiscalDocument.digits,
+	name = name,
 	email = email,
-	telefone = telefone,
+	phone = phone,
 )
 
 fun Veiculo.toResponse(): VeiculoResponse = VeiculoResponse(
 	id = id,
-	clienteId = clienteId,
-	placa = placa.normalizada,
-	marca = marca,
-	modelo = modelo,
-	ano = ano,
+	customerId = customerId,
+	plate = licensePlate.normalized,
+	brand = brand,
+	model = model,
+	year = year,
 )
 
 fun ServicoCatalogo.toResponse(): ServicoCatalogoResponse = ServicoCatalogoResponse(
 	id = id,
-	nome = nome,
-	descricao = descricao,
-	precoCentavos = precoCentavos,
-	tempoEstimadoMinutos = tempoEstimadoMinutos,
+	name = name,
+	description = description,
+	priceCents = priceCents,
+	estimatedMinutes = estimatedMinutes,
 )
 
 fun Peca.toResponse(): PecaResponse = PecaResponse(
 	id = id,
-	codigo = codigo,
-	nome = nome,
-	precoCentavos = precoCentavos,
-	quantidadeEstoque = quantidadeEstoque,
+	code = code,
+	name = name,
+	priceCents = priceCents,
+	stockQuantity = stockQuantity,
 )
 
 fun OrdemServico.toResponse(
-	nomeServico: (UUID) -> String? = { null },
-	nomePeca: (UUID) -> String? = { null },
+	serviceName: (UUID) -> String? = { null },
+	partName: (UUID) -> String? = { null },
 ): OrdemServicoResponse = OrdemServicoResponse(
 	id = id,
-	codigoAcompanhamento = codigoAcompanhamento,
-	clienteId = clienteId,
-	veiculoId = veiculoId,
+	trackingCode = trackingCode,
+	customerId = customerId,
+	vehicleId = vehicleId,
 	status = status,
-	valorServicosCentavos = valorServicosCentavos,
-	valorPecasCentavos = valorPecasCentavos,
-	valorTotalCentavos = valorTotalCentavos,
-	servicos = linhasServico.map {
+	servicesTotalCents = servicesTotalCents,
+	partsTotalCents = partsTotalCents,
+	totalCents = totalCents,
+	services = serviceLines.map {
 		OrdemServicoLinhaServicoResponse(
-			servicoCatalogoId = it.servicoCatalogoId,
-			nomeServico = nomeServico(it.servicoCatalogoId),
-			quantidade = it.quantidade,
-			precoUnitarioCentavos = it.precoUnitarioCentavos,
+			catalogServiceId = it.catalogServiceId,
+			serviceName = serviceName(it.catalogServiceId),
+			quantity = it.quantity,
+			unitPriceCents = it.unitPriceCents,
 		)
 	},
-	pecas = linhasPeca.map {
+	parts = partLines.map {
 		OrdemServicoLinhaPecaResponse(
-			pecaId = it.pecaId,
-			nomePeca = nomePeca(it.pecaId),
-			quantidade = it.quantidade,
-			precoUnitarioCentavos = it.precoUnitarioCentavos,
+			partId = it.partId,
+			partName = partName(it.partId),
+			quantity = it.quantity,
+			unitPriceCents = it.unitPriceCents,
 		)
 	},
 )

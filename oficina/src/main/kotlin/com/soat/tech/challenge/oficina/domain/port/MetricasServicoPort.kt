@@ -2,13 +2,13 @@ package com.soat.tech.challenge.oficina.domain.port
 
 import java.util.UUID
 
-data class TempoMedioServicoDto(
-	val servicoCatalogoId: UUID,
-	val nomeServico: String,
-	val mediaMinutos: Double,
-	val amostras: Long,
+data class AverageServiceTimeDto(
+	val catalogServiceId: UUID,
+	val serviceName: String,
+	val averageMinutes: Double,
+	val sampleCount: Long,
 )
 
 interface MetricasServicoPort {
-	fun tempoMedioExecucaoPorServico(): List<TempoMedioServicoDto>
+	fun averageExecutionTimeByService(): List<AverageServiceTimeDto>
 }

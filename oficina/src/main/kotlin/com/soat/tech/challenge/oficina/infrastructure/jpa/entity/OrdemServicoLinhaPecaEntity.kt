@@ -16,12 +16,12 @@ class OrdemServicoLinhaPecaEntity(
 	var id: String = "",
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "ordem_servico_id", nullable = false)
-	var ordemServico: OrdemServicoEntity? = null,
+	var workOrder: OrdemServicoEntity? = null,
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "peca_id", nullable = false)
-	var peca: PecaEntity? = null,
-	@Column(nullable = false)
-	var quantidade: Int = 0,
+	var part: PecaEntity? = null,
+	@Column(nullable = false, name = "quantidade")
+	var quantity: Int = 0,
 	@Column(nullable = false, name = "preco_unitario_centavos")
-	var precoUnitarioCentavos: Long = 0,
+	var unitPriceCents: Long = 0,
 )

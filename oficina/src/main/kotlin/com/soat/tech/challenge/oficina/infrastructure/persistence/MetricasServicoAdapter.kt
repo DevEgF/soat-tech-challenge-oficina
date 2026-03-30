@@ -1,7 +1,7 @@
 package com.soat.tech.challenge.oficina.infrastructure.persistence
 
+import com.soat.tech.challenge.oficina.domain.port.AverageServiceTimeDto
 import com.soat.tech.challenge.oficina.domain.port.MetricasServicoPort
-import com.soat.tech.challenge.oficina.domain.port.TempoMedioServicoDto
 import com.soat.tech.challenge.oficina.infrastructure.jpa.OrdemServicoJpaRepository
 import org.springframework.stereotype.Component
 import java.time.Duration
@@ -12,35 +12,35 @@ class MetricasServicoAdapter(
 	private val ordemServicoJpa: OrdemServicoJpaRepository,
 ) : MetricasServicoPort {
 
-	override fun tempoMedioExecucaoPorServico(): List<TempoMedioServicoDto> {
-		val ordens = ordemServicoJpa.findAllComDetalhes().filter { o ->
+	override fun averageExecutionTimeByService(): List<AverageServiceTimeDto> {
+		val orders = ordemServicoJpa.findAllWithDetails().filter { o ->
 			(o.status == "FINALIZADA" || o.status == "ENTREGUE") &&
-				o.execucaoIniciadaEm != null &&
-				o.finalizadaEm != null
+				o.workStartedAt != null &&
+				o.completedAt != null
 		}
-		data class Acc(var somaMinutos: Double = 0.0, var n: Long = 0)
-		val porServico = mutableMapOf<UUID, Acc>()
-		val nomes = mutableMapOf<UUID, String>()
-		for (o in ordens) {
-			val ini = o.execucaoIniciadaEm!!
-			val fim = o.finalizadaEm!!
-			val minutos = Duration.between(ini, fim).toMinutes().toDouble()
-			if (minutos < 0) continue
-			for (ls in o.linhasServico.toList()) {
-				val sid = UUID.fromString(ls.servicoCatalogo!!.id)
-				nomes[sid] = ls.servicoCatalogo!!.nome
-				val acc = porServico.getOrPut(sid) { Acc() }
-				acc.somaMinutos += minutos
+		data class Acc(var sumMinutes: Double = 0.0, var n: Long = 0)
+		val byService = mutableMapOf<UUID, Acc>()
+		val names = mutableMapOf<UUID, String>()
+		for (o in orders) {
+			val start = o.workStartedAt!!
+			val end = o.completedAt!!
+			val minutes = Duration.between(start, end).toMinutes().toDouble()
+			if (minutes < 0) continue
+			for (line in o.serviceLines.toList()) {
+				val sid = UUID.fromString(line.catalogService!!.id)
+				names[sid] = line.catalogService!!.name
+				val acc = byService.getOrPut(sid) { Acc() }
+				acc.sumMinutes += minutes
 				acc.n += 1
 			}
 		}
-		return porServico.map { (id, acc) ->
-			TempoMedioServicoDto(
-				servicoCatalogoId = id,
-				nomeServico = nomes[id] ?: "",
-				mediaMinutos = if (acc.n > 0) acc.somaMinutos / acc.n else 0.0,
-				amostras = acc.n,
+		return byService.map { (id, acc) ->
+			AverageServiceTimeDto(
+				catalogServiceId = id,
+				serviceName = names[id] ?: "",
+				averageMinutes = if (acc.n > 0) acc.sumMinutes / acc.n else 0.0,
+				sampleCount = acc.n,
 			)
-		}.sortedBy { it.nomeServico }
+		}.sortedBy { it.serviceName }
 	}
 }

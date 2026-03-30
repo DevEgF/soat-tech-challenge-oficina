@@ -4,5 +4,5 @@ import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.PecaEntity
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface PecaJpaRepository : JpaRepository<PecaEntity, String> {
-	fun findByCodigo(codigo: String): PecaEntity?
+	fun findByCode(code: String): PecaEntity?
 }

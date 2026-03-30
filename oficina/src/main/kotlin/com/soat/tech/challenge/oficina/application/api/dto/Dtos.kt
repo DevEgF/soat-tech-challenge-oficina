@@ -1,5 +1,6 @@
 package com.soat.tech.challenge.oficina.application.api.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.soat.tech.challenge.oficina.domain.model.StatusOrdemServico
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.Min
@@ -16,128 +17,159 @@ data class LoginRequest(
 data class LoginResponse(val accessToken: String, val tokenType: String = "Bearer", val expiresInSeconds: Long)
 
 data class ClienteRequest(
-	@field:NotBlank val documento: String = "",
-	@field:NotBlank val nome: String = "",
+	@get:JsonProperty("documento")
+	@field:NotBlank val taxIdDigits: String = "",
+	@get:JsonProperty("nome")
+	@field:NotBlank val name: String = "",
+	@get:JsonProperty("email")
 	val email: String? = null,
-	val telefone: String? = null,
+	@get:JsonProperty("telefone")
+	val phone: String? = null,
 )
 
 data class ClienteResponse(
 	val id: UUID,
-	val documento: String,
-	val nome: String,
-	val email: String?,
-	val telefone: String?,
+	@get:JsonProperty("documento") val taxIdDigits: String,
+	@get:JsonProperty("nome") val name: String,
+	@get:JsonProperty("email") val email: String?,
+	@get:JsonProperty("telefone") val phone: String?,
 )
 
 data class VeiculoRequest(
-	@field:NotNull val clienteId: UUID? = null,
-	@field:NotBlank val placa: String = "",
-	@field:NotBlank val marca: String = "",
-	@field:NotBlank val modelo: String = "",
-	@field:NotNull @field:Min(1900) val ano: Int? = null,
+	@get:JsonProperty("clienteId")
+	@field:NotNull val customerId: UUID? = null,
+	@get:JsonProperty("placa")
+	@field:NotBlank val plate: String = "",
+	@get:JsonProperty("marca")
+	@field:NotBlank val brand: String = "",
+	@get:JsonProperty("modelo")
+	@field:NotBlank val model: String = "",
+	@get:JsonProperty("ano")
+	@field:NotNull @field:Min(1900) val year: Int? = null,
 )
 
 data class VeiculoResponse(
 	val id: UUID,
-	val clienteId: UUID,
-	val placa: String,
-	val marca: String,
-	val modelo: String,
-	val ano: Int,
+	@get:JsonProperty("clienteId") val customerId: UUID,
+	@get:JsonProperty("placa") val plate: String,
+	@get:JsonProperty("marca") val brand: String,
+	@get:JsonProperty("modelo") val model: String,
+	@get:JsonProperty("ano") val year: Int,
 )
 
 data class ServicoCatalogoRequest(
-	@field:NotBlank val nome: String = "",
-	val descricao: String? = null,
-	@field:NotNull @field:Min(0) val precoCentavos: Long? = null,
-	@field:NotNull @field:Min(1) val tempoEstimadoMinutos: Int? = null,
+	@get:JsonProperty("nome")
+	@field:NotBlank val name: String = "",
+	@get:JsonProperty("descricao")
+	val description: String? = null,
+	@get:JsonProperty("precoCentavos")
+	@field:NotNull @field:Min(0) val priceCents: Long? = null,
+	@get:JsonProperty("tempoEstimadoMinutos")
+	@field:NotNull @field:Min(1) val estimatedMinutes: Int? = null,
 )
 
 data class ServicoCatalogoResponse(
 	val id: UUID,
-	val nome: String,
-	val descricao: String?,
-	val precoCentavos: Long,
-	val tempoEstimadoMinutos: Int,
+	@get:JsonProperty("nome") val name: String,
+	@get:JsonProperty("descricao") val description: String?,
+	@get:JsonProperty("precoCentavos") val priceCents: Long,
+	@get:JsonProperty("tempoEstimadoMinutos") val estimatedMinutes: Int,
 )
 
 data class PecaRequest(
-	@field:NotBlank val codigo: String = "",
-	@field:NotBlank val nome: String = "",
-	@field:NotNull @field:Min(0) val precoCentavos: Long? = null,
-	@field:NotNull @field:Min(0) val quantidadeEstoque: Int? = null,
+	@get:JsonProperty("codigo")
+	@field:NotBlank val code: String = "",
+	@get:JsonProperty("nome")
+	@field:NotBlank val name: String = "",
+	@get:JsonProperty("precoCentavos")
+	@field:NotNull @field:Min(0) val priceCents: Long? = null,
+	@get:JsonProperty("quantidadeEstoque")
+	@field:NotNull @field:Min(0) val stockQuantity: Int? = null,
 )
 
 data class PecaResponse(
 	val id: UUID,
-	val codigo: String,
-	val nome: String,
-	val precoCentavos: Long,
-	val quantidadeEstoque: Int,
+	@get:JsonProperty("codigo") val code: String,
+	@get:JsonProperty("nome") val name: String,
+	@get:JsonProperty("precoCentavos") val priceCents: Long,
+	@get:JsonProperty("quantidadeEstoque") val stockQuantity: Int,
 )
 
 data class OrdemServicoLinhaServicoRequest(
-	@field:NotNull val servicoCatalogoId: UUID? = null,
-	@field:NotNull @field:Min(1) val quantidade: Int? = null,
+	@get:JsonProperty("servicoCatalogoId")
+	@field:NotNull val catalogServiceId: UUID? = null,
+	@get:JsonProperty("quantidade")
+	@field:NotNull @field:Min(1) val quantity: Int? = null,
 )
 
 data class OrdemServicoLinhaPecaRequest(
-	@field:NotNull val pecaId: UUID? = null,
-	@field:NotNull @field:Min(1) val quantidade: Int? = null,
+	@get:JsonProperty("pecaId")
+	@field:NotNull val partId: UUID? = null,
+	@get:JsonProperty("quantidade")
+	@field:NotNull @field:Min(1) val quantity: Int? = null,
 )
 
 data class CriarOrdemServicoRequest(
-	@field:NotBlank val documentoCliente: String = "",
-	@field:NotBlank val nomeCliente: String = "",
-	val emailCliente: String? = null,
-	val telefoneCliente: String? = null,
-	@field:NotBlank val placa: String = "",
-	@field:NotBlank val marca: String = "",
-	@field:NotBlank val modelo: String = "",
-	@field:NotNull @field:Min(1900) val anoVeiculo: Int? = null,
-	val servicos: List<OrdemServicoLinhaServicoRequest> = emptyList(),
-	val pecas: List<OrdemServicoLinhaPecaRequest> = emptyList(),
+	@get:JsonProperty("documentoCliente")
+	@field:NotBlank val customerTaxIdDigits: String = "",
+	@get:JsonProperty("nomeCliente")
+	@field:NotBlank val customerName: String = "",
+	@get:JsonProperty("emailCliente")
+	val customerEmail: String? = null,
+	@get:JsonProperty("telefoneCliente")
+	val customerPhone: String? = null,
+	@get:JsonProperty("placa")
+	@field:NotBlank val plate: String = "",
+	@get:JsonProperty("marca")
+	@field:NotBlank val vehicleBrand: String = "",
+	@get:JsonProperty("modelo")
+	@field:NotBlank val vehicleModel: String = "",
+	@get:JsonProperty("anoVeiculo")
+	@field:NotNull @field:Min(1900) val vehicleYear: Int? = null,
+	@get:JsonProperty("servicos")
+	val services: List<OrdemServicoLinhaServicoRequest> = emptyList(),
+	@get:JsonProperty("pecas")
+	val parts: List<OrdemServicoLinhaPecaRequest> = emptyList(),
 )
 
 data class OrdemServicoLinhaServicoResponse(
-	val servicoCatalogoId: UUID,
-	val nomeServico: String?,
-	val quantidade: Int,
-	val precoUnitarioCentavos: Long,
+	@get:JsonProperty("servicoCatalogoId") val catalogServiceId: UUID,
+	@get:JsonProperty("nomeServico") val serviceName: String?,
+	@get:JsonProperty("quantidade") val quantity: Int,
+	@get:JsonProperty("precoUnitarioCentavos") val unitPriceCents: Long,
 )
 
 data class OrdemServicoLinhaPecaResponse(
-	val pecaId: UUID,
-	val nomePeca: String?,
-	val quantidade: Int,
-	val precoUnitarioCentavos: Long,
+	@get:JsonProperty("pecaId") val partId: UUID,
+	@get:JsonProperty("nomePeca") val partName: String?,
+	@get:JsonProperty("quantidade") val quantity: Int,
+	@get:JsonProperty("precoUnitarioCentavos") val unitPriceCents: Long,
 )
 
 data class OrdemServicoResponse(
 	val id: UUID,
-	val codigoAcompanhamento: String,
-	val clienteId: UUID,
-	val veiculoId: UUID,
+	@get:JsonProperty("codigoAcompanhamento") val trackingCode: String,
+	@get:JsonProperty("clienteId") val customerId: UUID,
+	@get:JsonProperty("veiculoId") val vehicleId: UUID,
 	val status: StatusOrdemServico,
-	val valorServicosCentavos: Long,
-	val valorPecasCentavos: Long,
-	val valorTotalCentavos: Long,
-	val servicos: List<OrdemServicoLinhaServicoResponse>,
-	val pecas: List<OrdemServicoLinhaPecaResponse>,
+	@get:JsonProperty("valorServicosCentavos") val servicesTotalCents: Long,
+	@get:JsonProperty("valorPecasCentavos") val partsTotalCents: Long,
+	@get:JsonProperty("valorTotalCentavos") val totalCents: Long,
+	@get:JsonProperty("servicos") val services: List<OrdemServicoLinhaServicoResponse>,
+	@get:JsonProperty("pecas") val parts: List<OrdemServicoLinhaPecaResponse>,
 )
 
 data class AcompanhamentoOsResponse(
-	val codigoAcompanhamento: String,
+	@get:JsonProperty("codigoAcompanhamento") val trackingCode: String,
 	val status: StatusOrdemServico,
-	val valorTotalCentavos: Long,
-	val placaVeiculo: String,
-	val documentoClienteMascarado: String,
+	@get:JsonProperty("valorTotalCentavos") val totalCents: Long,
+	@get:JsonProperty("placaVeiculo") val vehiclePlate: String,
+	@get:JsonProperty("documentoClienteMascarado") val maskedCustomerTaxId: String,
 )
 
 data class TempoMedioServicoResponse(
-	val servicoCatalogoId: UUID,
-	val nomeServico: String,
-	val mediaMinutos: Double,
-	val amostras: Long,
+	@get:JsonProperty("servicoCatalogoId") val catalogServiceId: UUID,
+	@get:JsonProperty("nomeServico") val serviceName: String,
+	@get:JsonProperty("mediaMinutos") val averageMinutes: Double,
+	@get:JsonProperty("amostras") val sampleCount: Long,
 )

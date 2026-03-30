@@ -11,12 +11,12 @@ class PecaEntity(
 	@Id
 	@Column(length = 36)
 	var id: String = "",
-	@Column(nullable = false, unique = true, length = 100)
-	var codigo: String = "",
-	@Column(nullable = false)
-	var nome: String = "",
+	@Column(nullable = false, unique = true, length = 100, name = "codigo")
+	var code: String = "",
+	@Column(nullable = false, name = "nome")
+	var name: String = "",
 	@Column(nullable = false, name = "preco_centavos")
-	var precoCentavos: Long = 0,
+	var priceCents: Long = 0,
 	@Column(nullable = false, name = "quantidade_estoque")
-	var quantidadeEstoque: Int = 0,
+	var stockQuantity: Int = 0,
 )

@@ -8,7 +8,7 @@ import java.util.UUID
 interface ClienteRepository {
 	fun save(cliente: Cliente): Cliente
 	fun findById(id: UUID): Optional<Cliente>
-	fun findByDocumento(documento: DocumentoFiscal): Optional<Cliente>
+	fun findByFiscalDocument(document: DocumentoFiscal): Optional<Cliente>
 	fun findAll(): List<Cliente>
 	fun deleteById(id: UUID)
 }

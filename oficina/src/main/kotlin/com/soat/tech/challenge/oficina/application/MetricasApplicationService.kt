@@ -7,17 +7,17 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class MetricasApplicationService(
-	private val metricas: MetricasServicoPort,
+	private val metrics: MetricasServicoPort,
 ) {
 
 	@Transactional(readOnly = true)
-	fun tempoMedioPorServico(): List<TempoMedioServicoResponse> =
-		metricas.tempoMedioExecucaoPorServico().map {
+	fun averageTimeByService(): List<TempoMedioServicoResponse> =
+		metrics.averageExecutionTimeByService().map {
 			TempoMedioServicoResponse(
-				servicoCatalogoId = it.servicoCatalogoId,
-				nomeServico = it.nomeServico,
-				mediaMinutos = it.mediaMinutos,
-				amostras = it.amostras,
+				catalogServiceId = it.catalogServiceId,
+				serviceName = it.serviceName,
+				averageMinutes = it.averageMinutes,
+				sampleCount = it.sampleCount,
 			)
 		}
 }

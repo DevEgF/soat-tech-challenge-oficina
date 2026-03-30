@@ -16,10 +16,10 @@ class ServicoCatalogoRepositoryAdapter(
 	override fun save(servico: ServicoCatalogo): ServicoCatalogo {
 		val e = ServicoCatalogoEntity(
 			id = servico.id.toString(),
-			nome = servico.nome,
-			descricao = servico.descricao,
-			precoCentavos = servico.precoCentavos,
-			tempoEstimadoMinutos = servico.tempoEstimadoMinutos,
+			name = servico.name,
+			description = servico.description,
+			priceCents = servico.priceCents,
+			estimatedMinutes = servico.estimatedMinutes,
 		)
 		return jpa.save(e).toDomain()
 	}

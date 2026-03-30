@@ -4,8 +4,8 @@ import java.util.UUID
 
 data class Cliente(
 	val id: UUID,
-	val documento: DocumentoFiscal,
-	val nome: String,
+	val fiscalDocument: DocumentoFiscal,
+	val name: String,
 	val email: String? = null,
-	val telefone: String? = null,
+	val phone: String? = null,
 )

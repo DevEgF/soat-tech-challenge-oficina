@@ -16,13 +16,13 @@ class VeiculoEntity(
 	var id: String = "",
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "cliente_id", nullable = false)
-	var cliente: ClienteEntity? = null,
-	@Column(nullable = false, unique = true, length = 10)
-	var placa: String = "",
-	@Column(nullable = false, length = 100)
-	var marca: String = "",
-	@Column(nullable = false, length = 100)
-	var modelo: String = "",
-	@Column(nullable = false)
-	var ano: Int = 0,
+	var customer: ClienteEntity? = null,
+	@Column(nullable = false, unique = true, length = 10, name = "placa")
+	var licensePlate: String = "",
+	@Column(nullable = false, length = 100, name = "marca")
+	var brand: String = "",
+	@Column(nullable = false, length = 100, name = "modelo")
+	var model: String = "",
+	@Column(nullable = false, name = "ano")
+	var year: Int = 0,
 )

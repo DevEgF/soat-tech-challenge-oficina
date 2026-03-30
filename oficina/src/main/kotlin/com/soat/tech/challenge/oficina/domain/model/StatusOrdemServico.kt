@@ -1,7 +1,7 @@
 package com.soat.tech.challenge.oficina.domain.model
 
 /**
- * Estados da ordem de serviço (conforme Tech Challenge).
+ * Work order lifecycle states (Tech Challenge). Enum names match persisted API/DB values.
  */
 enum class StatusOrdemServico {
 	RECEBIDA,

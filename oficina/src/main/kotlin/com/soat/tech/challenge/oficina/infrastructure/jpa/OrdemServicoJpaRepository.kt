@@ -9,41 +9,41 @@ interface OrdemServicoJpaRepository : JpaRepository<OrdemServicoEntity, String> 
 	@Query(
 		"""
 		SELECT DISTINCT o FROM OrdemServicoEntity o
-		LEFT JOIN FETCH o.cliente
-		LEFT JOIN FETCH o.veiculo
-		LEFT JOIN FETCH o.linhasServico ls
-		LEFT JOIN FETCH ls.servicoCatalogo
-		LEFT JOIN FETCH o.linhasPeca lp
-		LEFT JOIN FETCH lp.peca
+		LEFT JOIN FETCH o.customer
+		LEFT JOIN FETCH o.vehicle
+		LEFT JOIN FETCH o.serviceLines sl
+		LEFT JOIN FETCH sl.catalogService
+		LEFT JOIN FETCH o.partLines pl
+		LEFT JOIN FETCH pl.part
 		WHERE o.id = :id
 		""",
 	)
-	fun findByIdComDetalhes(id: String): Optional<OrdemServicoEntity>
+	fun findByIdWithDetails(id: String): Optional<OrdemServicoEntity>
 
 	@Query(
 		"""
 		SELECT DISTINCT o FROM OrdemServicoEntity o
-		LEFT JOIN FETCH o.cliente
-		LEFT JOIN FETCH o.veiculo
-		LEFT JOIN FETCH o.linhasServico ls
-		LEFT JOIN FETCH ls.servicoCatalogo
-		LEFT JOIN FETCH o.linhasPeca lp
-		LEFT JOIN FETCH lp.peca
-		WHERE o.codigoAcompanhamento = :codigo
+		LEFT JOIN FETCH o.customer
+		LEFT JOIN FETCH o.vehicle
+		LEFT JOIN FETCH o.serviceLines sl
+		LEFT JOIN FETCH sl.catalogService
+		LEFT JOIN FETCH o.partLines pl
+		LEFT JOIN FETCH pl.part
+		WHERE o.trackingCode = :code
 		""",
 	)
-	fun findByCodigoAcompanhamentoComDetalhes(codigo: String): Optional<OrdemServicoEntity>
+	fun findByTrackingCodeWithDetails(code: String): Optional<OrdemServicoEntity>
 
 	@Query(
 		"""
 		SELECT DISTINCT o FROM OrdemServicoEntity o
-		LEFT JOIN FETCH o.cliente
-		LEFT JOIN FETCH o.veiculo
-		LEFT JOIN FETCH o.linhasServico ls
-		LEFT JOIN FETCH ls.servicoCatalogo
-		LEFT JOIN FETCH o.linhasPeca lp
-		LEFT JOIN FETCH lp.peca
+		LEFT JOIN FETCH o.customer
+		LEFT JOIN FETCH o.vehicle
+		LEFT JOIN FETCH o.serviceLines sl
+		LEFT JOIN FETCH sl.catalogService
+		LEFT JOIN FETCH o.partLines pl
+		LEFT JOIN FETCH pl.part
 		""",
 	)
-	fun findAllComDetalhes(): List<OrdemServicoEntity>
+	fun findAllWithDetails(): List<OrdemServicoEntity>
 }

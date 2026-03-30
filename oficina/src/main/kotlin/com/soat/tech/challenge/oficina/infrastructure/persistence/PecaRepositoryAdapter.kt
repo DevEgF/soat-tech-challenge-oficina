@@ -16,10 +16,10 @@ class PecaRepositoryAdapter(
 	override fun save(peca: Peca): Peca {
 		val e = PecaEntity(
 			id = peca.id.toString(),
-			codigo = peca.codigo,
-			nome = peca.nome,
-			precoCentavos = peca.precoCentavos,
-			quantidadeEstoque = peca.quantidadeEstoque,
+			code = peca.code,
+			name = peca.name,
+			priceCents = peca.priceCents,
+			stockQuantity = peca.stockQuantity,
 		)
 		return jpa.save(e).toDomain()
 	}
@@ -27,8 +27,8 @@ class PecaRepositoryAdapter(
 	override fun findById(id: UUID): Optional<Peca> =
 		jpa.findById(id.toString()).map { it.toDomain() }
 
-	override fun findByCodigo(codigo: String): Optional<Peca> =
-		Optional.ofNullable(jpa.findByCodigo(codigo)).map { it.toDomain() }
+	override fun findByCode(code: String): Optional<Peca> =
+		Optional.ofNullable(jpa.findByCode(code)).map { it.toDomain() }
 
 	override fun findAll(): List<Peca> = jpa.findAll().map { it.toDomain() }
 

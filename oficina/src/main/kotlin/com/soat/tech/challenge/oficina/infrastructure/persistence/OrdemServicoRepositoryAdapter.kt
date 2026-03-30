@@ -24,70 +24,70 @@ class OrdemServicoRepositoryAdapter(
 ) : OrdemServicoRepository {
 
 	override fun save(ordem: OrdemServico): OrdemServico {
-		val cliente = clienteJpa.findById(ordem.clienteId.toString())
-			.orElseThrow { IllegalArgumentException("Cliente não encontrado") }
-		val veiculo = veiculoJpa.findById(ordem.veiculoId.toString())
-			.orElseThrow { IllegalArgumentException("Veículo não encontrado") }
-		val e = jpa.findByIdComDetalhes(ordem.id.toString()).orElseGet {
+		val customer = clienteJpa.findById(ordem.customerId.toString())
+			.orElseThrow { IllegalArgumentException("Customer not found") }
+		val vehicle = veiculoJpa.findById(ordem.vehicleId.toString())
+			.orElseThrow { IllegalArgumentException("Vehicle not found") }
+		val e = jpa.findByIdWithDetails(ordem.id.toString()).orElseGet {
 			OrdemServicoEntity(
 				id = ordem.id.toString(),
-				codigoAcompanhamento = ordem.codigoAcompanhamento,
-				cliente = cliente,
-				veiculo = veiculo,
+				trackingCode = ordem.trackingCode,
+				customer = customer,
+				vehicle = vehicle,
 				status = ordem.status.name,
-				valorServicosCentavos = ordem.valorServicosCentavos,
-				valorPecasCentavos = ordem.valorPecasCentavos,
-				valorTotalCentavos = ordem.valorTotalCentavos,
+				servicesTotalCents = ordem.servicesTotalCents,
+				partsTotalCents = ordem.partsTotalCents,
+				totalCents = ordem.totalCents,
 			)
 		}
-		e.cliente = cliente
-		e.veiculo = veiculo
+		e.customer = customer
+		e.vehicle = vehicle
 		e.status = ordem.status.name
-		e.valorServicosCentavos = ordem.valorServicosCentavos
-		e.valorPecasCentavos = ordem.valorPecasCentavos
-		e.valorTotalCentavos = ordem.valorTotalCentavos
-		e.diagnosticadoEm = ordem.diagnosticadoEm
-		e.orcamentoEnviadoEm = ordem.orcamentoEnviadoEm
-		e.aprovadoEm = ordem.aprovadoEm
-		e.execucaoIniciadaEm = ordem.execucaoIniciadaEm
-		e.finalizadaEm = ordem.finalizadaEm
-		e.entregueEm = ordem.entregueEm
-		e.linhasServico.clear()
-		e.linhasPeca.clear()
-		for (l in ordem.linhasServico) {
-			val sc = servicoCatalogoJpa.findById(l.servicoCatalogoId.toString())
-				.orElseThrow { IllegalArgumentException("Serviço catálogo não encontrado") }
+		e.servicesTotalCents = ordem.servicesTotalCents
+		e.partsTotalCents = ordem.partsTotalCents
+		e.totalCents = ordem.totalCents
+		e.diagnosedAt = ordem.diagnosedAt
+		e.quoteSentAt = ordem.quoteSentAt
+		e.approvedAt = ordem.approvedAt
+		e.workStartedAt = ordem.workStartedAt
+		e.completedAt = ordem.completedAt
+		e.deliveredAt = ordem.deliveredAt
+		e.serviceLines.clear()
+		e.partLines.clear()
+		for (l in ordem.serviceLines) {
+			val sc = servicoCatalogoJpa.findById(l.catalogServiceId.toString())
+				.orElseThrow { IllegalArgumentException("Catalog service not found") }
 			val le = OrdemServicoLinhaServicoEntity(
 				id = UUID.randomUUID().toString(),
-				ordemServico = e,
-				servicoCatalogo = sc,
-				quantidade = l.quantidade,
-				precoUnitarioCentavos = l.precoUnitarioCentavos,
+				workOrder = e,
+				catalogService = sc,
+				quantity = l.quantity,
+				unitPriceCents = l.unitPriceCents,
 			)
-			e.linhasServico.add(le)
+			e.serviceLines.add(le)
 		}
-		for (l in ordem.linhasPeca) {
-			val p = pecaJpa.findById(l.pecaId.toString())
-				.orElseThrow { IllegalArgumentException("Peça não encontrada") }
+		for (l in ordem.partLines) {
+			val p = pecaJpa.findById(l.partId.toString())
+				.orElseThrow { IllegalArgumentException("Part not found") }
 			val le = OrdemServicoLinhaPecaEntity(
 				id = UUID.randomUUID().toString(),
-				ordemServico = e,
-				peca = p,
-				quantidade = l.quantidade,
-				precoUnitarioCentavos = l.precoUnitarioCentavos,
+				workOrder = e,
+				part = p,
+				quantity = l.quantity,
+				unitPriceCents = l.unitPriceCents,
 			)
-			e.linhasPeca.add(le)
+			e.partLines.add(le)
 		}
 		jpa.save(e)
-		return jpa.findByIdComDetalhes(ordem.id.toString()).get().toDomain()
+		return jpa.findByIdWithDetails(ordem.id.toString()).get().toDomain()
 	}
 
 	override fun findById(id: UUID): Optional<OrdemServico> =
-		jpa.findByIdComDetalhes(id.toString()).map { it.toDomain() }
+		jpa.findByIdWithDetails(id.toString()).map { it.toDomain() }
 
-	override fun findByCodigoAcompanhamento(codigo: String): Optional<OrdemServico> =
-		jpa.findByCodigoAcompanhamentoComDetalhes(codigo).map { it.toDomain() }
+	override fun findByTrackingCode(code: String): Optional<OrdemServico> =
+		jpa.findByTrackingCodeWithDetails(code).map { it.toDomain() }
 
 	override fun findAll(): List<OrdemServico> =
-		jpa.findAllComDetalhes().map { it.toDomain() }
+		jpa.findAllWithDetails().map { it.toDomain() }
 }

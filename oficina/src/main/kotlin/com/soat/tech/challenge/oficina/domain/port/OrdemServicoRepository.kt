@@ -7,6 +7,6 @@ import java.util.UUID
 interface OrdemServicoRepository {
 	fun save(ordem: OrdemServico): OrdemServico
 	fun findById(id: UUID): Optional<OrdemServico>
-	fun findByCodigoAcompanhamento(codigo: String): Optional<OrdemServico>
+	fun findByTrackingCode(code: String): Optional<OrdemServico>
 	fun findAll(): List<OrdemServico>
 }

@@ -17,15 +17,15 @@ class VeiculoRepositoryAdapter(
 ) : VeiculoRepository {
 
 	override fun save(veiculo: Veiculo): Veiculo {
-		val cliente = clienteJpa.findById(veiculo.clienteId.toString())
-			.orElseThrow { IllegalArgumentException("Cliente não encontrado") }
+		val customer = clienteJpa.findById(veiculo.customerId.toString())
+			.orElseThrow { IllegalArgumentException("Customer not found") }
 		val e = VeiculoEntity(
 			id = veiculo.id.toString(),
-			cliente = cliente,
-			placa = veiculo.placa.normalizada,
-			marca = veiculo.marca,
-			modelo = veiculo.modelo,
-			ano = veiculo.ano,
+			customer = customer,
+			licensePlate = veiculo.licensePlate.normalized,
+			brand = veiculo.brand,
+			model = veiculo.model,
+			year = veiculo.year,
 		)
 		return jpa.save(e).toDomain()
 	}
@@ -33,11 +33,11 @@ class VeiculoRepositoryAdapter(
 	override fun findById(id: UUID): Optional<Veiculo> =
 		jpa.findById(id.toString()).map { it.toDomain() }
 
-	override fun findByPlaca(placa: PlacaVeiculo): Optional<Veiculo> =
-		Optional.ofNullable(jpa.findByPlaca(placa.normalizada)).map { it.toDomain() }
+	override fun findByLicensePlate(plate: PlacaVeiculo): Optional<Veiculo> =
+		Optional.ofNullable(jpa.findByLicensePlate(plate.normalized)).map { it.toDomain() }
 
-	override fun findByClienteId(clienteId: UUID): List<Veiculo> =
-		jpa.findByCliente_Id(clienteId.toString()).map { it.toDomain() }
+	override fun findByCustomerId(customerId: UUID): List<Veiculo> =
+		jpa.findByCustomer_Id(customerId.toString()).map { it.toDomain() }
 
 	override fun findAll(): List<Veiculo> = jpa.findAll().map { it.toDomain() }
 

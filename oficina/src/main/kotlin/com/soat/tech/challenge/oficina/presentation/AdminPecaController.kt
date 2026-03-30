@@ -21,26 +21,26 @@ import java.util.UUID
 @RequestMapping("/api/admin/pecas")
 @SecurityRequirement(name = "bearer-jwt")
 class AdminPecaController(
-	private val pecas: PecaApplicationService,
+	private val parts: PecaApplicationService,
 ) {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	fun criar(@Valid @RequestBody req: PecaRequest): PecaResponse = pecas.criar(req)
+	fun create(@Valid @RequestBody req: PecaRequest): PecaResponse = parts.create(req)
 
 	@GetMapping
-	fun listar(): List<PecaResponse> = pecas.listar()
+	fun list(): List<PecaResponse> = parts.list()
 
 	@GetMapping("/{id}")
-	fun obter(@PathVariable id: UUID): PecaResponse = pecas.obter(id)
+	fun get(@PathVariable id: UUID): PecaResponse = parts.get(id)
 
 	@PutMapping("/{id}")
-	fun atualizar(@PathVariable id: UUID, @Valid @RequestBody req: PecaRequest): PecaResponse =
-		pecas.atualizar(id, req)
+	fun update(@PathVariable id: UUID, @Valid @RequestBody req: PecaRequest): PecaResponse =
+		parts.update(id, req)
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	fun excluir(@PathVariable id: UUID) {
-		pecas.excluir(id)
+	fun delete(@PathVariable id: UUID) {
+		parts.delete(id)
 	}
 }

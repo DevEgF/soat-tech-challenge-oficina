@@ -1,8 +1,8 @@
 package com.soat.tech.challenge.oficina.application
 
 import com.soat.tech.challenge.oficina.application.api.dto.ServicoCatalogoRequest
-import com.soat.tech.challenge.oficina.application.api.toResponse
 import com.soat.tech.challenge.oficina.application.api.dto.ServicoCatalogoResponse
+import com.soat.tech.challenge.oficina.application.api.toResponse
 import com.soat.tech.challenge.oficina.domain.model.ServicoCatalogo
 import com.soat.tech.challenge.oficina.domain.port.ServicoCatalogoRepository
 import org.springframework.stereotype.Service
@@ -11,43 +11,43 @@ import java.util.UUID
 
 @Service
 class ServicoCatalogoApplicationService(
-	private val repo: ServicoCatalogoRepository,
+	private val catalog: ServicoCatalogoRepository,
 ) {
 
 	@Transactional
-	fun criar(req: ServicoCatalogoRequest): ServicoCatalogoResponse {
+	fun create(req: ServicoCatalogoRequest): ServicoCatalogoResponse {
 		val s = ServicoCatalogo(
 			id = UUID.randomUUID(),
-			nome = req.nome.trim(),
-			descricao = req.descricao?.trim()?.takeIf { it.isNotEmpty() },
-			precoCentavos = req.precoCentavos!!,
-			tempoEstimadoMinutos = req.tempoEstimadoMinutos!!,
+			name = req.name.trim(),
+			description = req.description?.trim()?.takeIf { it.isNotEmpty() },
+			priceCents = req.priceCents!!,
+			estimatedMinutes = req.estimatedMinutes!!,
 		)
-		return repo.save(s).toResponse()
+		return catalog.save(s).toResponse()
 	}
 
 	@Transactional(readOnly = true)
-	fun listar(): List<ServicoCatalogoResponse> = repo.findAll().map { it.toResponse() }
+	fun list(): List<ServicoCatalogoResponse> = catalog.findAll().map { it.toResponse() }
 
 	@Transactional(readOnly = true)
-	fun obter(id: UUID): ServicoCatalogoResponse =
-		repo.findById(id).map { it.toResponse() }.orElseThrow { NotFoundException("Serviço não encontrado") }
+	fun get(id: UUID): ServicoCatalogoResponse =
+		catalog.findById(id).map { it.toResponse() }.orElseThrow { NotFoundException("Catalog service not found") }
 
 	@Transactional
-	fun atualizar(id: UUID, req: ServicoCatalogoRequest): ServicoCatalogoResponse {
-		val e = repo.findById(id).orElseThrow { NotFoundException("Serviço não encontrado") }
-		val atualizado = e.copy(
-			nome = req.nome.trim(),
-			descricao = req.descricao?.trim()?.takeIf { it.isNotEmpty() },
-			precoCentavos = req.precoCentavos!!,
-			tempoEstimadoMinutos = req.tempoEstimadoMinutos!!,
+	fun update(id: UUID, req: ServicoCatalogoRequest): ServicoCatalogoResponse {
+		val existing = catalog.findById(id).orElseThrow { NotFoundException("Catalog service not found") }
+		val updated = existing.copy(
+			name = req.name.trim(),
+			description = req.description?.trim()?.takeIf { it.isNotEmpty() },
+			priceCents = req.priceCents!!,
+			estimatedMinutes = req.estimatedMinutes!!,
 		)
-		return repo.save(atualizado).toResponse()
+		return catalog.save(updated).toResponse()
 	}
 
 	@Transactional
-	fun excluir(id: UUID) {
-		if (repo.findById(id).isEmpty) throw NotFoundException("Serviço não encontrado")
-		repo.deleteById(id)
+	fun delete(id: UUID) {
+		if (catalog.findById(id).isEmpty) throw NotFoundException("Catalog service not found")
+		catalog.deleteById(id)
 	}
 }

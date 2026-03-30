@@ -21,28 +21,29 @@ import java.util.UUID
 @RequestMapping("/api/admin/servicos-catalogo")
 @SecurityRequirement(name = "bearer-jwt")
 class AdminServicoCatalogoController(
-	private val servicos: ServicoCatalogoApplicationService,
+	private val catalogServices: ServicoCatalogoApplicationService,
 ) {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	fun criar(@Valid @RequestBody req: ServicoCatalogoRequest): ServicoCatalogoResponse = servicos.criar(req)
+	fun create(@Valid @RequestBody req: ServicoCatalogoRequest): ServicoCatalogoResponse =
+		catalogServices.create(req)
 
 	@GetMapping
-	fun listar(): List<ServicoCatalogoResponse> = servicos.listar()
+	fun list(): List<ServicoCatalogoResponse> = catalogServices.list()
 
 	@GetMapping("/{id}")
-	fun obter(@PathVariable id: UUID): ServicoCatalogoResponse = servicos.obter(id)
+	fun get(@PathVariable id: UUID): ServicoCatalogoResponse = catalogServices.get(id)
 
 	@PutMapping("/{id}")
-	fun atualizar(
+	fun update(
 		@PathVariable id: UUID,
 		@Valid @RequestBody req: ServicoCatalogoRequest,
-	): ServicoCatalogoResponse = servicos.atualizar(id, req)
+	): ServicoCatalogoResponse = catalogServices.update(id, req)
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	fun excluir(@PathVariable id: UUID) {
-		servicos.excluir(id)
+	fun delete(@PathVariable id: UUID) {
+		catalogServices.delete(id)
 	}
 }

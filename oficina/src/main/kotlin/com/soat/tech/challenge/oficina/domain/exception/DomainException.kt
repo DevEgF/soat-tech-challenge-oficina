@@ -2,14 +2,14 @@ package com.soat.tech.challenge.oficina.domain.exception
 
 open class DomainException(message: String) : RuntimeException(message)
 
-class DocumentoInvalidoException(message: String) : DomainException(message)
+class InvalidTaxDocumentException(message: String) : DomainException(message)
 
-class PlacaInvalidaException(message: String) : DomainException(message)
+class InvalidLicensePlateException(message: String) : DomainException(message)
 
-class TransicaoStatusInvalidaException(
-	val statusAtual: String,
-	val acao: String,
-) : DomainException("Transição inválida: status=$statusAtual, ação=$acao")
+class InvalidStatusTransitionException(
+	val currentStatus: String,
+	val action: String,
+) : DomainException("Invalid transition: status=$currentStatus, action=$action")
 
-class EstoqueInsuficienteException(pecaId: String, solicitado: Int, disponivel: Int) :
-	DomainException("Estoque insuficiente da peça $pecaId: solicitado=$solicitado, disponível=$disponivel")
+class InsufficientStockException(partId: String, requested: Int, available: Int) :
+	DomainException("Insufficient stock for part $partId: requested=$requested, available=$available")

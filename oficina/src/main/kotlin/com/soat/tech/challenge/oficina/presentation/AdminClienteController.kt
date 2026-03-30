@@ -21,26 +21,26 @@ import java.util.UUID
 @RequestMapping("/api/admin/clientes")
 @SecurityRequirement(name = "bearer-jwt")
 class AdminClienteController(
-	private val clientes: ClienteApplicationService,
+	private val customers: ClienteApplicationService,
 ) {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	fun criar(@Valid @RequestBody req: ClienteRequest): ClienteResponse = clientes.criar(req)
+	fun create(@Valid @RequestBody req: ClienteRequest): ClienteResponse = customers.create(req)
 
 	@GetMapping
-	fun listar(): List<ClienteResponse> = clientes.listar()
+	fun list(): List<ClienteResponse> = customers.list()
 
 	@GetMapping("/{id}")
-	fun obter(@PathVariable id: UUID): ClienteResponse = clientes.obter(id)
+	fun get(@PathVariable id: UUID): ClienteResponse = customers.get(id)
 
 	@PutMapping("/{id}")
-	fun atualizar(@PathVariable id: UUID, @Valid @RequestBody req: ClienteRequest): ClienteResponse =
-		clientes.atualizar(id, req)
+	fun update(@PathVariable id: UUID, @Valid @RequestBody req: ClienteRequest): ClienteResponse =
+		customers.update(id, req)
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	fun excluir(@PathVariable id: UUID) {
-		clientes.excluir(id)
+	fun delete(@PathVariable id: UUID) {
+		customers.delete(id)
 	}
 }

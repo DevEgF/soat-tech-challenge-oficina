@@ -11,9 +11,10 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/api/admin/metricas")
 @SecurityRequirement(name = "bearer-jwt")
 class AdminMetricasController(
-	private val metricas: MetricasApplicationService,
+	private val metrics: MetricasApplicationService,
 ) {
 
 	@GetMapping("/tempo-medio-execucao-servicos")
-	fun tempoMedio(): List<TempoMedioServicoResponse> = metricas.tempoMedioPorServico()
+	fun averageExecutionTimeByService(): List<TempoMedioServicoResponse> =
+		metrics.averageTimeByService()
 }

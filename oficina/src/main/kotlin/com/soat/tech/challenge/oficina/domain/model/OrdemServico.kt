@@ -1,126 +1,126 @@
 package com.soat.tech.challenge.oficina.domain.model
 
-import com.soat.tech.challenge.oficina.domain.exception.TransicaoStatusInvalidaException
+import com.soat.tech.challenge.oficina.domain.exception.InvalidStatusTransitionException
 import java.time.Instant
 import java.util.UUID
 
 data class LinhaServicoOrdem(
-	val servicoCatalogoId: UUID,
-	val quantidade: Int,
-	val precoUnitarioCentavos: Long,
+	val catalogServiceId: UUID,
+	val quantity: Int,
+	val unitPriceCents: Long,
 ) {
 	init {
-		require(quantidade > 0) { "Quantidade de serviço deve ser positiva" }
-		require(precoUnitarioCentavos >= 0) { "Preço não pode ser negativo" }
+		require(quantity > 0) { "Service quantity must be positive" }
+		require(unitPriceCents >= 0) { "Price cannot be negative" }
 	}
 }
 
 data class LinhaPecaOrdem(
-	val pecaId: UUID,
-	val quantidade: Int,
-	val precoUnitarioCentavos: Long,
+	val partId: UUID,
+	val quantity: Int,
+	val unitPriceCents: Long,
 ) {
 	init {
-		require(quantidade > 0) { "Quantidade de peça deve ser positiva" }
-		require(precoUnitarioCentavos >= 0) { "Preço não pode ser negativo" }
+		require(quantity > 0) { "Part quantity must be positive" }
+		require(unitPriceCents >= 0) { "Price cannot be negative" }
 	}
 }
 
 /**
- * Ordem de serviço (agregado): orçamento derivado de linhas; máquina de estados explícita.
+ * Work order (aggregate): quote derived from lines; explicit state machine.
  */
 data class OrdemServico(
 	val id: UUID,
-	val codigoAcompanhamento: String,
-	val clienteId: UUID,
-	val veiculoId: UUID,
+	val trackingCode: String,
+	val customerId: UUID,
+	val vehicleId: UUID,
 	var status: StatusOrdemServico,
-	val linhasServico: MutableList<LinhaServicoOrdem>,
-	val linhasPeca: MutableList<LinhaPecaOrdem>,
-	var valorServicosCentavos: Long,
-	var valorPecasCentavos: Long,
-	var valorTotalCentavos: Long,
-	var diagnosticadoEm: Instant? = null,
-	var orcamentoEnviadoEm: Instant? = null,
-	var aprovadoEm: Instant? = null,
-	var execucaoIniciadaEm: Instant? = null,
-	var finalizadaEm: Instant? = null,
-	var entregueEm: Instant? = null,
+	val serviceLines: MutableList<LinhaServicoOrdem>,
+	val partLines: MutableList<LinhaPecaOrdem>,
+	var servicesTotalCents: Long,
+	var partsTotalCents: Long,
+	var totalCents: Long,
+	var diagnosedAt: Instant? = null,
+	var quoteSentAt: Instant? = null,
+	var approvedAt: Instant? = null,
+	var workStartedAt: Instant? = null,
+	var completedAt: Instant? = null,
+	var deliveredAt: Instant? = null,
 ) {
 
-	fun recalcularOrcamento() {
-		valorServicosCentavos = linhasServico.sumOf { it.quantidade.toLong() * it.precoUnitarioCentavos }
-		valorPecasCentavos = linhasPeca.sumOf { it.quantidade.toLong() * it.precoUnitarioCentavos }
-		valorTotalCentavos = valorServicosCentavos + valorPecasCentavos
+	fun recalculateQuote() {
+		servicesTotalCents = serviceLines.sumOf { it.quantity.toLong() * it.unitPriceCents }
+		partsTotalCents = partLines.sumOf { it.quantity.toLong() * it.unitPriceCents }
+		totalCents = servicesTotalCents + partsTotalCents
 	}
 
-	private fun exigeStatus(esperado: StatusOrdemServico, acao: String) {
-		if (status != esperado) {
-			throw TransicaoStatusInvalidaException(status.name, acao)
+	private fun requireStatus(expected: StatusOrdemServico, action: String) {
+		if (status != expected) {
+			throw InvalidStatusTransitionException(status.name, action)
 		}
 	}
 
-	fun iniciarDiagnostico(agora: Instant) {
-		exigeStatus(StatusOrdemServico.RECEBIDA, "iniciarDiagnostico")
+	fun startDiagnosis(now: Instant) {
+		requireStatus(StatusOrdemServico.RECEBIDA, "startDiagnosis")
 		status = StatusOrdemServico.EM_DIAGNOSTICO
-		diagnosticadoEm = agora
+		diagnosedAt = now
 	}
 
-	fun enviarOrcamento(agora: Instant) {
-		exigeStatus(StatusOrdemServico.EM_DIAGNOSTICO, "enviarOrcamento")
-		recalcularOrcamento()
+	fun sendQuote(now: Instant) {
+		requireStatus(StatusOrdemServico.EM_DIAGNOSTICO, "sendQuote")
+		recalculateQuote()
 		status = StatusOrdemServico.AGUARDANDO_APROVACAO
-		orcamentoEnviadoEm = agora
+		quoteSentAt = now
 	}
 
-	fun aprovarOrcamento(agora: Instant) {
-		exigeStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "aprovarOrcamento")
+	fun approveQuote(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "approveQuote")
 		status = StatusOrdemServico.EM_EXECUCAO
-		aprovadoEm = agora
-		execucaoIniciadaEm = agora
+		approvedAt = now
+		workStartedAt = now
 	}
 
-	fun voltarParaDiagnostico(agora: Instant) {
-		exigeStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "voltarParaDiagnostico")
+	fun returnToDiagnosis(now: Instant) {
+		requireStatus(StatusOrdemServico.AGUARDANDO_APROVACAO, "returnToDiagnosis")
 		status = StatusOrdemServico.EM_DIAGNOSTICO
-		orcamentoEnviadoEm = null
+		quoteSentAt = null
 	}
 
-	fun concluirServicos(agora: Instant) {
-		exigeStatus(StatusOrdemServico.EM_EXECUCAO, "concluirServicos")
+	fun completeServices(now: Instant) {
+		requireStatus(StatusOrdemServico.EM_EXECUCAO, "completeServices")
 		status = StatusOrdemServico.FINALIZADA
-		finalizadaEm = agora
+		completedAt = now
 	}
 
-	fun registrarEntrega(agora: Instant) {
-		exigeStatus(StatusOrdemServico.FINALIZADA, "registrarEntrega")
+	fun registerDelivery(now: Instant) {
+		requireStatus(StatusOrdemServico.FINALIZADA, "registerDelivery")
 		status = StatusOrdemServico.ENTREGUE
-		entregueEm = agora
+		deliveredAt = now
 	}
 
 	companion object {
-		fun nova(
+		fun create(
 			id: UUID = UUID.randomUUID(),
-			codigoAcompanhamento: String = UUID.randomUUID().toString(),
-			clienteId: UUID,
-			veiculoId: UUID,
-			linhasServico: List<LinhaServicoOrdem>,
-			linhasPeca: List<LinhaPecaOrdem>,
+			trackingCode: String = UUID.randomUUID().toString(),
+			customerId: UUID,
+			vehicleId: UUID,
+			serviceLines: List<LinhaServicoOrdem>,
+			partLines: List<LinhaPecaOrdem>,
 		): OrdemServico {
-			val os = OrdemServico(
+			val wo = OrdemServico(
 				id = id,
-				codigoAcompanhamento = codigoAcompanhamento,
-				clienteId = clienteId,
-				veiculoId = veiculoId,
+				trackingCode = trackingCode,
+				customerId = customerId,
+				vehicleId = vehicleId,
 				status = StatusOrdemServico.RECEBIDA,
-				linhasServico = linhasServico.toMutableList(),
-				linhasPeca = linhasPeca.toMutableList(),
-				valorServicosCentavos = 0,
-				valorPecasCentavos = 0,
-				valorTotalCentavos = 0,
+				serviceLines = serviceLines.toMutableList(),
+				partLines = partLines.toMutableList(),
+				servicesTotalCents = 0,
+				partsTotalCents = 0,
+				totalCents = 0,
 			)
-			os.recalcularOrcamento()
-			return os
+			wo.recalculateQuote()
+			return wo
 		}
 	}
 }

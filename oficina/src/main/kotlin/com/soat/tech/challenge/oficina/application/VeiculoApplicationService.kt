@@ -1,8 +1,8 @@
 package com.soat.tech.challenge.oficina.application
 
 import com.soat.tech.challenge.oficina.application.api.dto.VeiculoRequest
-import com.soat.tech.challenge.oficina.application.api.toResponse
 import com.soat.tech.challenge.oficina.application.api.dto.VeiculoResponse
+import com.soat.tech.challenge.oficina.application.api.toResponse
 import com.soat.tech.challenge.oficina.domain.model.PlacaVeiculo
 import com.soat.tech.challenge.oficina.domain.model.Veiculo
 import com.soat.tech.challenge.oficina.domain.port.ClienteRepository
@@ -13,56 +13,56 @@ import java.util.UUID
 
 @Service
 class VeiculoApplicationService(
-	private val veiculos: VeiculoRepository,
-	private val clientes: ClienteRepository,
+	private val vehicles: VeiculoRepository,
+	private val customers: ClienteRepository,
 ) {
 
 	@Transactional
-	fun criar(req: VeiculoRequest): VeiculoResponse {
-		val clienteId = req.clienteId!!
-		clientes.findById(clienteId).orElseThrow { NotFoundException("Cliente não encontrado") }
-		val placa = PlacaVeiculo.parse(req.placa)
-		veiculos.findByPlaca(placa).ifPresent { throw IllegalArgumentException("Placa já cadastrada") }
+	fun create(req: VeiculoRequest): VeiculoResponse {
+		val customerId = req.customerId!!
+		customers.findById(customerId).orElseThrow { NotFoundException("Customer not found") }
+		val plate = PlacaVeiculo.parse(req.plate)
+		vehicles.findByLicensePlate(plate).ifPresent { throw IllegalArgumentException("Plate already registered") }
 		val v = Veiculo(
 			id = UUID.randomUUID(),
-			clienteId = clienteId,
-			placa = placa,
-			marca = req.marca.trim(),
-			modelo = req.modelo.trim(),
-			ano = req.ano!!,
+			customerId = customerId,
+			licensePlate = plate,
+			brand = req.brand.trim(),
+			model = req.model.trim(),
+			year = req.year!!,
 		)
-		return veiculos.save(v).toResponse()
+		return vehicles.save(v).toResponse()
 	}
 
 	@Transactional(readOnly = true)
-	fun listar(): List<VeiculoResponse> = veiculos.findAll().map { it.toResponse() }
+	fun list(): List<VeiculoResponse> = vehicles.findAll().map { it.toResponse() }
 
 	@Transactional(readOnly = true)
-	fun obter(id: UUID): VeiculoResponse =
-		veiculos.findById(id).map { it.toResponse() }.orElseThrow { NotFoundException("Veículo não encontrado") }
+	fun get(id: UUID): VeiculoResponse =
+		vehicles.findById(id).map { it.toResponse() }.orElseThrow { NotFoundException("Vehicle not found") }
 
 	@Transactional
-	fun atualizar(id: UUID, req: VeiculoRequest): VeiculoResponse {
-		val existente = veiculos.findById(id).orElseThrow { NotFoundException("Veículo não encontrado") }
-		val clienteId = req.clienteId!!
-		clientes.findById(clienteId).orElseThrow { NotFoundException("Cliente não encontrado") }
-		val placa = PlacaVeiculo.parse(req.placa)
-		veiculos.findByPlaca(placa).ifPresent { outro ->
-			if (outro.id != id) throw IllegalArgumentException("Placa já usada por outro veículo")
+	fun update(id: UUID, req: VeiculoRequest): VeiculoResponse {
+		val existing = vehicles.findById(id).orElseThrow { NotFoundException("Vehicle not found") }
+		val customerId = req.customerId!!
+		customers.findById(customerId).orElseThrow { NotFoundException("Customer not found") }
+		val plate = PlacaVeiculo.parse(req.plate)
+		vehicles.findByLicensePlate(plate).ifPresent { other ->
+			if (other.id != id) throw IllegalArgumentException("Plate already used by another vehicle")
 		}
-		val atualizado = existente.copy(
-			clienteId = clienteId,
-			placa = placa,
-			marca = req.marca.trim(),
-			modelo = req.modelo.trim(),
-			ano = req.ano!!,
+		val updated = existing.copy(
+			customerId = customerId,
+			licensePlate = plate,
+			brand = req.brand.trim(),
+			model = req.model.trim(),
+			year = req.year!!,
 		)
-		return veiculos.save(atualizado).toResponse()
+		return vehicles.save(updated).toResponse()
 	}
 
 	@Transactional
-	fun excluir(id: UUID) {
-		if (veiculos.findById(id).isEmpty) throw NotFoundException("Veículo não encontrado")
-		veiculos.deleteById(id)
+	fun delete(id: UUID) {
+		if (vehicles.findById(id).isEmpty) throw NotFoundException("Vehicle not found")
+		vehicles.deleteById(id)
 	}
 }

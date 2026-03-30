@@ -11,12 +11,12 @@ class ClienteEntity(
 	@Id
 	@Column(length = 36)
 	var id: String = "",
-	@Column(nullable = false, unique = true, length = 14)
-	var documento: String = "",
-	@Column(nullable = false)
-	var nome: String = "",
+	@Column(nullable = false, unique = true, length = 14, name = "documento")
+	var documentDigits: String = "",
+	@Column(nullable = false, name = "nome")
+	var name: String = "",
 	@Column
 	var email: String? = null,
-	@Column(length = 50)
-	var telefone: String? = null,
+	@Column(length = 50, name = "telefone")
+	var phone: String? = null,
 )

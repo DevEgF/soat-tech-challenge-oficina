@@ -7,7 +7,7 @@ import java.util.UUID
 interface PecaRepository {
 	fun save(peca: Peca): Peca
 	fun findById(id: UUID): Optional<Peca>
-	fun findByCodigo(codigo: String): Optional<Peca>
+	fun findByCode(code: String): Optional<Peca>
 	fun findAll(): List<Peca>
 	fun deleteById(id: UUID)
 }

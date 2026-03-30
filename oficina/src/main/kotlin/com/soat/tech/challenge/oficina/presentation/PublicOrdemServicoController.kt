@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/api/public/os")
 class PublicOrdemServicoController(
-	private val ordens: OrdemServicoApplicationService,
+	private val workOrders: OrdemServicoApplicationService,
 ) {
 
 	@GetMapping("/acompanhar")
-	fun acompanhar(
+	fun track(
 		@RequestParam documento: String,
 		@RequestParam codigo: String,
-	): AcompanhamentoOsResponse = ordens.acompanhar(documento, codigo)
+	): AcompanhamentoOsResponse = workOrders.track(documento, codigo)
 }

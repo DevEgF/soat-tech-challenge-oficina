@@ -5,44 +5,63 @@ import com.soat.tech.challenge.oficina.domain.model.Peca
 import com.soat.tech.challenge.oficina.domain.port.PecaRepository
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.Test
 import java.util.Optional
 import java.util.UUID
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
 
 class PecaApplicationServiceTest {
 
 	private val repo = mockk<PecaRepository>()
 	private val service = PecaApplicationService(repo)
 
-	@Test
-	fun `criar peca`() {
-		every { repo.findByCodigo("P1") } returns Optional.empty()
-		every { repo.save(any()) } answers { firstArg() }
-		val r = service.criar(PecaRequest(codigo = "P1", nome = "Filtro", precoCentavos = 10, quantidadeEstoque = 5))
-		assertEquals("P1", r.codigo)
-	}
+	@Nested
+	@DisplayName("Given new part code")
+	inner class GivenNewCode {
 
-	@Test
-	fun `criar falha codigo duplicado`() {
-		every { repo.findByCodigo("P1") } returns Optional.of(
-			Peca(UUID.randomUUID(), "P1", "X", 1, 1),
-		)
-		assertFailsWith<IllegalArgumentException> {
-			service.criar(PecaRequest(codigo = "P1", nome = "Filtro", precoCentavos = 10, quantidadeEstoque = 5))
+		@Test
+		@DisplayName("when create then persists")
+		fun create() {
+			every { repo.findByCode("P1") } returns Optional.empty()
+			every { repo.save(any()) } answers { firstArg() }
+			val r = service.create(PecaRequest(code = "P1", name = "Filtro", priceCents = 10, stockQuantity = 5))
+			assertEquals("P1", r.code)
 		}
 	}
 
-	@Test
-	fun `atualizar e obter`() {
-		val id = UUID.randomUUID()
-		val p = Peca(id, "P2", "N", 5, 1)
-		every { repo.findById(id) } returns Optional.of(p)
-		every { repo.findByCodigo("P2") } returns Optional.of(p)
-		every { repo.save(any()) } answers { firstArg() }
-		val out = service.atualizar(id, PecaRequest(codigo = "P2", nome = "N2", precoCentavos = 6, quantidadeEstoque = 2))
-		assertEquals(6, out.precoCentavos)
-		assertEquals("N2", out.nome)
+	@Nested
+	@DisplayName("Given code already exists")
+	inner class GivenDuplicateCode {
+
+		@Test
+		@DisplayName("when create then throws")
+		fun duplicate() {
+			every { repo.findByCode("P1") } returns Optional.of(
+				Peca(UUID.randomUUID(), "P1", "X", 1, 1),
+			)
+			assertFailsWith<IllegalArgumentException> {
+				service.create(PecaRequest(code = "P1", name = "Filtro", priceCents = 10, stockQuantity = 5))
+			}
+		}
+	}
+
+	@Nested
+	@DisplayName("Given part to update")
+	inner class GivenUpdate {
+
+		@Test
+		@DisplayName("when update with new code then returns new price")
+		fun update() {
+			val id = UUID.randomUUID()
+			val p = Peca(id, "P1", "N", 5, 1)
+			every { repo.findById(id) } returns Optional.of(p)
+			every { repo.findByCode("P2") } returns Optional.of(p)
+			every { repo.save(any()) } answers { firstArg() }
+			val out = service.update(id, PecaRequest(code = "P2", name = "N2", priceCents = 6, stockQuantity = 2))
+			assertEquals(6, out.priceCents)
+		}
 	}
 }

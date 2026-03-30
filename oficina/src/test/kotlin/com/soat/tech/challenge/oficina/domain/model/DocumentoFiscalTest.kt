@@ -1,6 +1,6 @@
 package com.soat.tech.challenge.oficina.domain.model
 
-import com.soat.tech.challenge.oficina.domain.exception.DocumentoInvalidoException
+import com.soat.tech.challenge.oficina.domain.exception.InvalidTaxDocumentException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -8,27 +8,27 @@ import kotlin.test.assertFailsWith
 class DocumentoFiscalTest {
 
 	@Test
-	fun `aceita CPF valido com formatacao`() {
+	fun `given formatted CPF when parse then digits normalized`() {
 		val d = DocumentoFiscal.parse("529.982.247-25")
-		assertEquals("52998224725", d.digitos)
+		assertEquals("52998224725", d.digits)
 	}
 
 	@Test
-	fun `aceita CNPJ valido`() {
+	fun `given CNPJ when parse then accepts valid`() {
 		val d = DocumentoFiscal.parse("11.222.333/0001-81")
-		assertEquals("11222333000181", d.digitos)
+		assertEquals("11222333000181", d.digits)
 	}
 
 	@Test
-	fun `rejeita CPF invalido`() {
-		assertFailsWith<DocumentoInvalidoException> {
-			DocumentoFiscal.parse("111.111.111-11")
+	fun `given invalid CPF when parse then throws`() {
+		assertFailsWith<InvalidTaxDocumentException> {
+			DocumentoFiscal.parse("11111111111")
 		}
 	}
 
 	@Test
-	fun `rejeita tamanho incorreto`() {
-		assertFailsWith<DocumentoInvalidoException> {
+	fun `given wrong length when parse then throws`() {
+		assertFailsWith<InvalidTaxDocumentException> {
 			DocumentoFiscal.parse("123")
 		}
 	}

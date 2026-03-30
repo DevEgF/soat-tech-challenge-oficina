@@ -1,6 +1,6 @@
 package com.soat.tech.challenge.oficina.domain.model
 
-import com.soat.tech.challenge.oficina.domain.exception.PlacaInvalidaException
+import com.soat.tech.challenge.oficina.domain.exception.InvalidLicensePlateException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -8,19 +8,19 @@ import kotlin.test.assertFailsWith
 class PlacaVeiculoTest {
 
 	@Test
-	fun `aceita placa antiga`() {
-		assertEquals("ABC1234", PlacaVeiculo.parse("abc-1234").normalizada)
+	fun `given legacy format when parse then normalized`() {
+		assertEquals("ABC1234", PlacaVeiculo.parse("abc-1234").normalized)
 	}
 
 	@Test
-	fun `aceita placa Mercosul`() {
-		assertEquals("ABC1D23", PlacaVeiculo.parse("abc1d23").normalizada)
+	fun `given Mercosur format when parse then normalized`() {
+		assertEquals("ABC1D23", PlacaVeiculo.parse("abc1d23").normalized)
 	}
 
 	@Test
-	fun `rejeita formato invalido`() {
-		assertFailsWith<PlacaInvalidaException> {
-			PlacaVeiculo.parse("1234ABC")
+	fun `given invalid pattern when parse then throws`() {
+		assertFailsWith<InvalidLicensePlateException> {
+			PlacaVeiculo.parse("1234567")
 		}
 	}
 }

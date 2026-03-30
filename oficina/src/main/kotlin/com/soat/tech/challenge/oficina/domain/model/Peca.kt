@@ -2,21 +2,21 @@ package com.soat.tech.challenge.oficina.domain.model
 
 import java.util.UUID
 
-/** Peça ou insumo com controle de estoque. */
+/** Part or supply with stock control. */
 data class Peca(
 	val id: UUID,
-	val codigo: String,
-	val nome: String,
-	val precoCentavos: Long,
-	val quantidadeEstoque: Int,
+	val code: String,
+	val name: String,
+	val priceCents: Long,
+	val stockQuantity: Int,
 ) {
 	init {
-		require(quantidadeEstoque >= 0) { "Estoque não pode ser negativo" }
+		require(stockQuantity >= 0) { "Stock cannot be negative" }
 	}
 
-	fun comEstoqueAjustado(delta: Int): Peca {
-		val novo = quantidadeEstoque + delta
-		require(novo >= 0) { "Estoque resultante negativo" }
-		return copy(quantidadeEstoque = novo)
+	fun withAdjustedStock(delta: Int): Peca {
+		val next = stockQuantity + delta
+		require(next >= 0) { "Resulting stock cannot be negative" }
+		return copy(stockQuantity = next)
 	}
 }

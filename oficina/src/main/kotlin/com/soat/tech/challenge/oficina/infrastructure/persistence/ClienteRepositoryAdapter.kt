@@ -21,8 +21,8 @@ class ClienteRepositoryAdapter(
 	override fun findById(id: UUID): Optional<Cliente> =
 		jpa.findById(id.toString()).map { it.toDomain() }
 
-	override fun findByDocumento(documento: DocumentoFiscal): Optional<Cliente> =
-		Optional.ofNullable(jpa.findByDocumento(documento.digitos)).map { it.toDomain() }
+	override fun findByFiscalDocument(document: DocumentoFiscal): Optional<Cliente> =
+		Optional.ofNullable(jpa.findByDocumentDigits(document.digits)).map { it.toDomain() }
 
 	override fun findAll(): List<Cliente> = jpa.findAll().map { it.toDomain() }
 

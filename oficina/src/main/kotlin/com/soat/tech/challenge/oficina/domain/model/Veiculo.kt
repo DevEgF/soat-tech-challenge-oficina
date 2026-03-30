@@ -4,9 +4,9 @@ import java.util.UUID
 
 data class Veiculo(
 	val id: UUID,
-	val clienteId: UUID,
-	val placa: PlacaVeiculo,
-	val marca: String,
-	val modelo: String,
-	val ano: Int,
+	val customerId: UUID,
+	val licensePlate: PlacaVeiculo,
+	val brand: String,
+	val model: String,
+	val year: Int,
 )

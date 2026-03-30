@@ -19,34 +19,38 @@ import java.util.UUID
 @RequestMapping("/api/admin/ordens-servico")
 @SecurityRequirement(name = "bearer-jwt")
 class AdminOrdemServicoController(
-	private val ordens: OrdemServicoApplicationService,
+	private val workOrders: OrdemServicoApplicationService,
 ) {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	fun criar(@Valid @RequestBody req: CriarOrdemServicoRequest): OrdemServicoResponse = ordens.criar(req)
+	fun create(@Valid @RequestBody req: CriarOrdemServicoRequest): OrdemServicoResponse =
+		workOrders.create(req)
 
 	@GetMapping
-	fun listar(): List<OrdemServicoResponse> = ordens.listar()
+	fun list(): List<OrdemServicoResponse> = workOrders.list()
 
 	@GetMapping("/{id}")
-	fun obter(@PathVariable id: UUID): OrdemServicoResponse = ordens.obter(id)
+	fun get(@PathVariable id: UUID): OrdemServicoResponse = workOrders.get(id)
 
 	@PostMapping("/{id}/iniciar-diagnostico")
-	fun iniciarDiagnostico(@PathVariable id: UUID): OrdemServicoResponse = ordens.iniciarDiagnostico(id)
+	fun startDiagnosis(@PathVariable id: UUID): OrdemServicoResponse = workOrders.startDiagnosis(id)
 
 	@PostMapping("/{id}/enviar-orcamento")
-	fun enviarOrcamento(@PathVariable id: UUID): OrdemServicoResponse = ordens.enviarOrcamento(id)
+	fun sendQuote(@PathVariable id: UUID): OrdemServicoResponse = workOrders.sendQuote(id)
 
 	@PostMapping("/{id}/aprovar-orcamento")
-	fun aprovarOrcamento(@PathVariable id: UUID): OrdemServicoResponse = ordens.aprovarOrcamento(id)
+	fun approveQuote(@PathVariable id: UUID): OrdemServicoResponse = workOrders.approveQuote(id)
 
 	@PostMapping("/{id}/voltar-diagnostico")
-	fun voltarDiagnostico(@PathVariable id: UUID): OrdemServicoResponse = ordens.voltarParaDiagnostico(id)
+	fun returnToDiagnosis(@PathVariable id: UUID): OrdemServicoResponse =
+		workOrders.returnToDiagnosis(id)
 
 	@PostMapping("/{id}/concluir-servicos")
-	fun concluir(@PathVariable id: UUID): OrdemServicoResponse = ordens.concluirServicos(id)
+	fun completeServices(@PathVariable id: UUID): OrdemServicoResponse =
+		workOrders.completeServices(id)
 
 	@PostMapping("/{id}/registrar-entrega")
-	fun entregar(@PathVariable id: UUID): OrdemServicoResponse = ordens.registrarEntrega(id)
+	fun registerDelivery(@PathVariable id: UUID): OrdemServicoResponse =
+		workOrders.registerDelivery(id)
 }

@@ -21,26 +21,26 @@ import java.util.UUID
 @RequestMapping("/api/admin/veiculos")
 @SecurityRequirement(name = "bearer-jwt")
 class AdminVeiculoController(
-	private val veiculos: VeiculoApplicationService,
+	private val vehicles: VeiculoApplicationService,
 ) {
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
-	fun criar(@Valid @RequestBody req: VeiculoRequest): VeiculoResponse = veiculos.criar(req)
+	fun create(@Valid @RequestBody req: VeiculoRequest): VeiculoResponse = vehicles.create(req)
 
 	@GetMapping
-	fun listar(): List<VeiculoResponse> = veiculos.listar()
+	fun list(): List<VeiculoResponse> = vehicles.list()
 
 	@GetMapping("/{id}")
-	fun obter(@PathVariable id: UUID): VeiculoResponse = veiculos.obter(id)
+	fun get(@PathVariable id: UUID): VeiculoResponse = vehicles.get(id)
 
 	@PutMapping("/{id}")
-	fun atualizar(@PathVariable id: UUID, @Valid @RequestBody req: VeiculoRequest): VeiculoResponse =
-		veiculos.atualizar(id, req)
+	fun update(@PathVariable id: UUID, @Valid @RequestBody req: VeiculoRequest): VeiculoResponse =
+		vehicles.update(id, req)
 
 	@DeleteMapping("/{id}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	fun excluir(@PathVariable id: UUID) {
-		veiculos.excluir(id)
+	fun delete(@PathVariable id: UUID) {
+		vehicles.delete(id)
 	}
 }

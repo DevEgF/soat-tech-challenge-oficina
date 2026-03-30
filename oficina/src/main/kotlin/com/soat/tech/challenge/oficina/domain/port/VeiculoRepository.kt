@@ -8,8 +8,8 @@ import java.util.UUID
 interface VeiculoRepository {
 	fun save(veiculo: Veiculo): Veiculo
 	fun findById(id: UUID): Optional<Veiculo>
-	fun findByPlaca(placa: PlacaVeiculo): Optional<Veiculo>
-	fun findByClienteId(clienteId: UUID): List<Veiculo>
+	fun findByLicensePlate(plate: PlacaVeiculo): Optional<Veiculo>
+	fun findByCustomerId(customerId: UUID): List<Veiculo>
 	fun findAll(): List<Veiculo>
 	fun deleteById(id: UUID)
 }
