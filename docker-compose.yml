@@ -21,9 +21,12 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
-      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://db:5432/oficina}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-oficina}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      APP_JWT_SECRET: ${APP_JWT_SECRET:-troque-este-segredo-por-um-valor-longo-aleatorio-em-producao}
+      APP_SECURITY_ADMIN_USERNAME: ${APP_SECURITY_ADMIN_USERNAME:-admin}
+      APP_SECURITY_ADMIN_PASSWORD: ${APP_SECURITY_ADMIN_PASSWORD:-troque-esta-senha}
     depends_on:
       db:
         condition: service_healthy
