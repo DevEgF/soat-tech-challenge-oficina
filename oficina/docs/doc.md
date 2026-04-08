@@ -5,6 +5,7 @@
 * [1. Introdução](#1-introdução)
 * [2. Dicionário de Linguagem Ubíqua](#2-dicionário-de-linguagem-ubíqua)
 * [3. Event Storming](#3-event-storming)
+* [4. Swimlane da Ordem de Serviço](#4-swimlane-da-ordem-de-serviço)
 
 ## 1. Introdução
 
@@ -19,23 +20,35 @@ A Linguagem Ubíqua estabelece o vocabulário compartilhado entre os desenvolved
 *   **Ordem de Serviço (OS)**: Entidade central do fluxo de atendimento, que registra a identificação do cliente, o veículo, os serviços solicitados, as peças necessárias e o progresso do trabalho.
 *   **Serviço**: Ação ou reparo executado no veículo, como "troca de óleo" ou "alinhamento".
 *   **Peças e Insumos**: Materiais físicos necessários para a execução dos serviços, que dependem de um controle de estoque rigoroso.
+*   **Reserva de Peça**: Bloqueio do estoque de uma peça para uma OS, criada quando o técnico submete o plano de serviço. Confirmada pelo almoxarife ao autorizar a saída física.
 *   **Orçamento**: Documento gerado automaticamente com base nos serviços e peças atrelados à OS, que deve ser enviado ao cliente para aprovação antes da execução.
-*   **Status da OS**: O estado atual do ciclo de vida do atendimento, que avança automaticamente conforme ações no sistema. Pode ser: Recebida, Em diagnóstico, Aguardando aprovação, Em execução, Finalizada e Entregue.
-*   **Procedimentos Técnicos**: Checklists ou instruções detalhadas e padronizadas que guiam o mecânico na execução correta de cada Serviço, garantindo a qualidade, a segurança e a rastreabilidade do trabalho realizado.
+*   **Aprovação Interna**: Etapa em que o administrador avalia o plano técnico antes de o orçamento ser enviado ao cliente.
+*   **Status da OS**: O estado atual do ciclo de vida do atendimento, que avança automaticamente conforme ações no sistema. Pode ser: Recebida, Em diagnóstico, Aguardando aprovação interna, Aguardando aprovação do cliente, Em execução, Finalizada, Entregue ou Cancelada.
+*   **Código de Acompanhamento**: UUID público da OS que permite ao cliente consultar o progresso sem autenticação.
+*   **Ponto de Reposição**: Quantidade mínima de estoque de uma peça abaixo da qual é gerado um alerta para o almoxarife.
+*   **Entrada de Mercadoria**: Registro de recebimento de peças que incrementa o estoque físico.
 
 ## 3. Event Storming
 
-Abaixo estão os mapeamentos de Ações e Eventos de Domínio.
+Abaixo estão os mapeamentos de Ações e Eventos de Domínio, cobrindo todos os atores do sistema.
 
-| Ação de Domínio | Evento de Domínio       |
-| --- |-------------------------|
-| Cliente solicita serviço | OS Recebida             |
-| Mecânico inicia diagnóstico | OS Em diagnóstico       |
-| Sistema gera orçamento | OS Aguardando aprovação |
-| Mecânico inicia execução | OS Em execução          |
-| Cliente rejeita orçamento | OS Cancelada            |
-| Mecânico finaliza serviço | OS Finalizada           |
-| Cliente retira veículo | OS Entregue             |
+| Ator | Ação de Domínio | Evento de Domínio |
+|---|---|---|
+| Atendente | Registra OS com cliente, veículo e serviços | OS Recebida |
+| Técnico | Inicia diagnóstico | OS Em diagnóstico |
+| Técnico | Submete plano (serviços + peças) | OS Aguardando aprovação interna / Reservas de peças criadas |
+| Admin | Aprova plano interno | OS pronta para orçamento ao cliente |
+| Admin | Reprova plano interno | OS Cancelada |
+| Atendente | Envia orçamento ao cliente | OS Aguardando aprovação do cliente |
+| Atendente | Retorna OS ao diagnóstico | OS Em diagnóstico |
+| Cliente | Aprova orçamento | OS aguardando saída de peças |
+| Cliente | Reprova orçamento | OS Cancelada |
+| Almoxarife | Confirma saída física das peças | OS Em execução / Reservas confirmadas / Estoque deduzido |
+| Técnico | Conclui serviços | OS Finalizada |
+| Atendente | Registra entrega do veículo | OS Entregue |
+| Admin | Consulta métricas | Tempo médio de execução por serviço calculado |
+| Admin | Registra entrada de mercadoria | Estoque de peça incrementado |
+| Sistema | Detecta peça abaixo do ponto de reposição | Alerta de estoque baixo gerado |
 
 ## Diagrama Event Storming
 
@@ -43,3 +56,37 @@ Abaixo estão os mapeamentos de Ações e Eventos de Domínio.
 
 ## Link para o diagrama interativo no Excalidraw:
 https://excalidraw.com/#json=hNqS470KXMvDfNgdykG-P,66YHxm_zQ_vM3HjqrPO7qg
+
+## 4. Swimlane da Ordem de Serviço
+
+```
+RECEBIDA
+  │  (atendente cria OS)
+  ↓
+EM_DIAGNOSTICO
+  │  (técnico inicia diagnóstico)
+  ↓
+EM_DIAGNOSTICO → técnico submete plano → AGUARDANDO_APROVACAO_INTERNA
+                                               │
+                          ┌────────────────────┤
+                          ↓ admin reprova       ↓ admin aprova
+                       CANCELADA         atendente envia orçamento
+                                               ↓
+                                    AGUARDANDO_APROVACAO (cliente)
+                                               │
+                          ┌────────────────────┤
+                          ↓ cliente reprova     ↓ cliente aprova
+                       CANCELADA         almoxarife confirma saída
+                                               ↓
+                                          EM_EXECUCAO
+                                               │
+                                        técnico conclui
+                                               ↓
+                                          FINALIZADA
+                                               │
+                                     atendente registra entrega
+                                               ↓
+                                            ENTREGUE
+```
+
+**Caminho de retorno:** atendente pode usar `voltar-diagnostico` para mover `AGUARDANDO_APROVACAO` de volta a `EM_DIAGNOSTICO` (ex.: cliente solicita revisão do orçamento).

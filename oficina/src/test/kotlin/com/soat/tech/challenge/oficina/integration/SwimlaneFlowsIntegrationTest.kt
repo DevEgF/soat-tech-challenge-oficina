@@ -66,16 +66,16 @@ class SwimlaneFlowsIntegrationTest {
 	private fun seedCatalog(stock: Int, pontoReposicao: Int? = 5, pecaCode: String): Pair<String, String> {
 		val servicoJson = postJson(
 			"/api/admin/servicos-catalogo",
-			"""{"nome":"Svc-${pecaCode}","descricao":"x","precoCentavos":1000,"tempoEstimadoMinutos":30}""",
+			"""{"name":"Svc-${pecaCode}","description":"x","priceCents":1000,"estimatedMinutes":30}""",
 			"SCOPE_ADMIN",
 			201,
 		)
 		val servicoId = mapper.readTree(servicoJson)["id"].asText()
-		val pontoJson = if (pontoReposicao != null) """"pontoReposicao":$pontoReposicao""" else ""
+		val pontoJson = if (pontoReposicao != null) """"replenishmentPoint":$pontoReposicao""" else ""
 		val pecaBody = if (pontoJson.isNotEmpty()) {
-			"""{"codigo":"$pecaCode","nome":"Peca","precoCentavos":100,"quantidadeEstoque":$stock,$pontoJson}"""
+			"""{"code":"$pecaCode","name":"Part","priceCents":100,"stockQuantity":$stock,$pontoJson}"""
 		} else {
-			"""{"codigo":"$pecaCode","nome":"Peca","precoCentavos":100,"quantidadeEstoque":$stock}"""
+			"""{"code":"$pecaCode","name":"Part","priceCents":100,"stockQuantity":$stock}"""
 		}
 		val pecaJson = postJson("/api/admin/pecas", pecaBody, "SCOPE_ADMIN", 201)
 		val pecaId = mapper.readTree(pecaJson)["id"].asText()
@@ -93,24 +93,24 @@ class SwimlaneFlowsIntegrationTest {
 			"/api/attendant/ordens-servico",
 			"""
 			{
-			  "documentoCliente": "$documento",
-			  "nomeCliente": "Cliente Teste",
-			  "placa": "$placa",
-			  "marca": "VW",
-			  "modelo": "Gol",
-			  "anoVeiculo": 2020,
-			  "servicos": [{"servicoCatalogoId": "$servicoId", "quantidade": 1}],
-			  "pecas": [{"pecaId": "$pecaId", "quantidade": $partQty}]
+			  "customerTaxId": "$documento",
+			  "customerName": "Customer Teste",
+			  "plate": "$placa",
+			  "vehicleBrand": "VW",
+			  "vehicleModel": "Gol",
+			  "vehicleYear": 2020,
+			  "services": [{"catalogServiceId": "$servicoId", "quantity": 1}],
+			  "parts": [{"partId": "$pecaId", "quantity": $partQty}]
 			}
 			""".trimIndent(),
 			"SCOPE_ATTENDANT",
 			201,
 		)
 		val os: JsonNode = mapper.readTree(osJson)
-		return os["id"].asText() to os["codigoAcompanhamento"].asText()
+		return os["id"].asText() to os["trackingCode"].asText()
 	}
 
-	private fun advanceToAguardandoCliente(servicoId: String, pecaId: String, placa: String): Pair<String, String> {
+	private fun advanceToAguardandoCustomer(servicoId: String, pecaId: String, placa: String): Pair<String, String> {
 		val (osId, codigo) = createOs(servicoId, pecaId, 1, placa = placa)
 		mockMvc.perform(
 			post("/api/technician/ordens-servico/$osId/iniciar-diagnostico")
@@ -133,7 +133,7 @@ class SwimlaneFlowsIntegrationTest {
 
 	@Test
 	@DisplayName("Fluxo: administrador reprova plano interno → OS cancelada")
-	fun fluxoReprovarInterno() {
+	fun testRejectInternal() {
 		val s = suffix()
 		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-RI-$s")
 		val (osId, _) = createOs(servicoId, pecaId, 1, placa = uniquePlate())
@@ -150,48 +150,48 @@ class SwimlaneFlowsIntegrationTest {
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN"))),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.status").value("CANCELADA"))
+			.andExpect(jsonPath("$.status").value("CANCELLED"))
 	}
 
 	@Test
 	@DisplayName("Fluxo: cliente reprova orçamento → OS cancelada")
-	fun fluxoClienteReprovaOrcamento() {
+	fun testCustomerRejectsQuote() {
 		val s = suffix()
 		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-CR-$s")
-		val (osId, codigo) = advanceToAguardandoCliente(servicoId, pecaId, uniquePlate())
+		val (osId, codigo) = advanceToAguardandoCustomer(servicoId, pecaId, uniquePlate())
 		mockMvc.perform(
 			post("/api/public/os/reprovar-orcamento")
 				.param("documento", "52998224725")
 				.param("codigo", codigo),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.status").value("CANCELADA"))
+			.andExpect(jsonPath("$.status").value("CANCELLED"))
 		mockMvc.perform(
 			get("/api/public/os/acompanhar")
 				.param("documento", "52998224725")
 				.param("codigo", codigo),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.status").value("CANCELADA"))
+			.andExpect(jsonPath("$.status").value("CANCELLED"))
 	}
 
 	@Test
 	@DisplayName("Fluxo: atendente volta orçamento ao diagnóstico")
-	fun fluxoVoltarDiagnostico() {
+	fun testReturnToDiagnosis() {
 		val s = suffix()
 		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-VD-$s")
-		val (osId, _) = advanceToAguardandoCliente(servicoId, pecaId, uniquePlate())
+		val (osId, _) = advanceToAguardandoCustomer(servicoId, pecaId, uniquePlate())
 		mockMvc.perform(
 			post("/api/attendant/ordens-servico/$osId/voltar-diagnostico")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ATTENDANT"))),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.status").value("EM_DIAGNOSTICO"))
+			.andExpect(jsonPath("$.status").value("IN_DIAGNOSIS"))
 	}
 
 	@Test
 	@DisplayName("Fluxo: submeter plano com estoque insuficiente → conflito")
-	fun fluxoEstoqueInsuficienteNaReserva() {
+	fun testInsufficientStockOnReservation() {
 		val s = suffix()
 		val (servicoId, pecaId) = seedCatalog(2, null, "PEC-EI-$s")
 		val (osId, _) = createOs(servicoId, pecaId, 9, placa = uniquePlate())
@@ -207,10 +207,10 @@ class SwimlaneFlowsIntegrationTest {
 
 	@Test
 	@DisplayName("Fluxo: concluir serviços sem confirmação do almoxarife → conflito")
-	fun fluxoConcluirSemConfirmarSaida() {
+	fun testCompleteWithoutConfirmingStockExit() {
 		val s = suffix()
 		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-CS-$s")
-		val (osId, codigo) = advanceToAguardandoCliente(servicoId, pecaId, uniquePlate())
+		val (osId, codigo) = advanceToAguardandoCustomer(servicoId, pecaId, uniquePlate())
 		mockMvc.perform(
 			post("/api/public/os/aprovar-orcamento")
 				.param("documento", "52998224725")
@@ -224,7 +224,7 @@ class SwimlaneFlowsIntegrationTest {
 
 	@Test
 	@DisplayName("Fluxo: almoxarife lista reservas pendentes após submeter plano")
-	fun fluxoAlmoxarifeListaReservasPendentes() {
+	fun testWarehouseListsPendingReservations() {
 		val s = suffix()
 		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-LR-$s")
 		val (osId, _) = createOs(servicoId, pecaId, 2, placa = uniquePlate())
@@ -246,26 +246,26 @@ class SwimlaneFlowsIntegrationTest {
 
 	@Test
 	@DisplayName("Fluxo: administrador registra entrada de mercadoria")
-	fun fluxoEntradaMercadoria() {
+	fun testGoodsReceipt() {
 		val s = suffix()
 		val (_, pecaId) = seedCatalog(5, 10, "PEC-EM-$s")
 		mockMvc.perform(
 			post("/api/admin/pecas/$pecaId/entrada-mercadoria")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN")))
 				.contentType(MediaType.APPLICATION_JSON)
-				.content("""{"quantidade":7,"referencia":"NF-123"}"""),
+				.content("""{"quantity":7,"reference":"NF-123"}"""),
 		).andExpect(status().isOk)
 		mockMvc.perform(
 			get("/api/admin/pecas/$pecaId")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN"))),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.quantidadeEstoque").value(12))
+			.andExpect(jsonPath("$.stockQuantity").value(12))
 	}
 
 	@Test
 	@DisplayName("Fluxo: almoxarife consulta alertas de estoque baixo")
-	fun fluxoAlertaEstoqueBaixo() {
+	fun testLowStockAlert() {
 		val s = suffix()
 		val code = "PEC-AL-$s"
 		seedCatalog(3, 5, code)
@@ -278,6 +278,6 @@ class SwimlaneFlowsIntegrationTest {
 		val alerts = mapper.readTree(body)
 		val row = alerts.elements().asSequence().firstOrNull { it.path("code").asText() == code }
 		assertNotNull(row, "esperado alerta para codigo=$code em $body")
-		assertEquals(3, row!!.path("quantidadeEstoque").asInt())
+		assertEquals(3, row!!.path("stockQuantity").asInt())
 	}
 }

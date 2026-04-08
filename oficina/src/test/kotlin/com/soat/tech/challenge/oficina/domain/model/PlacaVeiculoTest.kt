@@ -5,22 +5,22 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 
-class PlacaVeiculoTest {
+class LicensePlateTest {
 
 	@Test
 	fun `given legacy format when parse then normalized`() {
-		assertEquals("ABC1234", PlacaVeiculo.parse("abc-1234").normalized)
+		assertEquals("ABC1234", LicensePlate.parse("abc-1234").normalized)
 	}
 
 	@Test
 	fun `given Mercosur format when parse then normalized`() {
-		assertEquals("ABC1D23", PlacaVeiculo.parse("abc1d23").normalized)
+		assertEquals("ABC1D23", LicensePlate.parse("abc1d23").normalized)
 	}
 
 	@Test
 	fun `given invalid pattern when parse then throws`() {
 		assertFailsWith<InvalidLicensePlateException> {
-			PlacaVeiculo.parse("1234567")
+			LicensePlate.parse("1234567")
 		}
 	}
 }

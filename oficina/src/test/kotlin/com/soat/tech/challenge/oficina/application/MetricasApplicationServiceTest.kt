@@ -1,7 +1,7 @@
 package com.soat.tech.challenge.oficina.application
 
 import com.soat.tech.challenge.oficina.domain.port.AverageServiceTimeDto
-import com.soat.tech.challenge.oficina.domain.port.MetricasServicoPort
+import com.soat.tech.challenge.oficina.domain.port.MetricsServicePort
 import io.mockk.every
 import io.mockk.mockk
 import java.util.UUID
@@ -10,10 +10,10 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class MetricasApplicationServiceTest {
+class MetricsApplicationServiceTest {
 
-	private val port = mockk<MetricasServicoPort>()
-	private val service = MetricasApplicationService(port)
+	private val port = mockk<MetricsServicePort>()
+	private val service = MetricsApplicationService(port)
 
 	@Nested
 	@DisplayName("Given port returns samples")

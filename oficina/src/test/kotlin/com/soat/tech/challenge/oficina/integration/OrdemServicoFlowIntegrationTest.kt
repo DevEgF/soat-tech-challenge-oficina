@@ -25,7 +25,7 @@ import java.util.UUID
 
 @SpringBootTest
 @ActiveProfiles("test")
-class OrdemServicoFlowIntegrationTest {
+class WorkOrderFlowIntegrationTest {
 
 	@Autowired
 	private lateinit var webApplicationContext: WebApplicationContext
@@ -75,7 +75,7 @@ class OrdemServicoFlowIntegrationTest {
 
 		val servicoJson = postJsonWithScope(
 			"/api/admin/servicos-catalogo",
-			"""{"nome":"Troca de oleo","descricao":"Exemplo","precoCentavos":15000,"tempoEstimadoMinutos":45}""",
+			"""{"name":"Troca de oleo","description":"Exemplo","priceCents":15000,"estimatedMinutes":45}""",
 			"SCOPE_ADMIN",
 			201,
 		)
@@ -83,7 +83,7 @@ class OrdemServicoFlowIntegrationTest {
 
 		val pecaJson = postJsonWithScope(
 			"/api/admin/pecas",
-			"""{"codigo":"FILTRO-01","nome":"Filtro oleo","precoCentavos":3500,"quantidadeEstoque":10,"pontoReposicao":5}""",
+			"""{"code":"FILTRO-01","name":"Filtro oleo","priceCents":3500,"stockQuantity":10,"replenishmentPoint":5}""",
 			"SCOPE_ADMIN",
 			201,
 		)
@@ -93,14 +93,14 @@ class OrdemServicoFlowIntegrationTest {
 			"/api/attendant/ordens-servico",
 			"""
 			{
-			  "documentoCliente": "529.982.247-25",
-			  "nomeCliente": "Maria Teste",
-			  "placa": "ABC1D23",
-			  "marca": "VW",
-			  "modelo": "Gol",
-			  "anoVeiculo": 2020,
-			  "servicos": [{"servicoCatalogoId": "$servicoId", "quantidade": 1}],
-			  "pecas": [{"pecaId": "$pecaId", "quantidade": 2}]
+			  "customerTaxId": "529.982.247-25",
+			  "customerName": "Maria Teste",
+			  "plate": "ABC1D23",
+			  "vehicleBrand": "VW",
+			  "vehicleModel": "Gol",
+			  "vehicleYear": 2020,
+			  "services": [{"catalogServiceId": "$servicoId", "quantity": 1}],
+			  "parts": [{"partId": "$pecaId", "quantity": 2}]
 			}
 			""".trimIndent(),
 			"SCOPE_ATTENDANT",
@@ -108,27 +108,27 @@ class OrdemServicoFlowIntegrationTest {
 		)
 		val os: JsonNode = objectMapper.readTree(osJson)
 		val osId = os["id"].asText()
-		val codigo = os["codigoAcompanhamento"].asText()
+		val codigo = os["trackingCode"].asText()
 
 		mockMvc.perform(
 			post("/api/technician/ordens-servico/$osId/iniciar-diagnostico")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_TECHNICIAN"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("EM_DIAGNOSTICO"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("IN_DIAGNOSIS"))
 
 		mockMvc.perform(
 			post("/api/technician/ordens-servico/$osId/submeter-plano")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_TECHNICIAN"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO_INTERNA"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("PENDING_INTERNAL_APPROVAL"))
 
 		mockMvc.perform(
 			post("/api/admin/ordens-servico/$osId/aprovar-interno")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO_INTERNA"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("PENDING_INTERNAL_APPROVAL"))
 
 		mockMvc.perform(
 			post("/api/attendant/ordens-servico/$osId/enviar-orcamento-cliente")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ATTENDANT"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("AGUARDANDO_APROVACAO"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("PENDING_APPROVAL"))
 
 		mockMvc.perform(
 			post("/api/public/os/aprovar-orcamento")
@@ -136,7 +136,7 @@ class OrdemServicoFlowIntegrationTest {
 				.param("codigo", codigo),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.status").value("EM_EXECUCAO"))
+			.andExpect(jsonPath("$.status").value("IN_EXECUTION"))
 
 		mockMvc.perform(
 			post("/api/warehouse/ordens-servico/$osId/confirmar-saida")
@@ -149,25 +149,25 @@ class OrdemServicoFlowIntegrationTest {
 				.param("codigo", codigo),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$.status").value("EM_EXECUCAO"))
-			.andExpect(jsonPath("$.placaVeiculo").value("ABC1D23"))
+			.andExpect(jsonPath("$.status").value("IN_EXECUTION"))
+			.andExpect(jsonPath("$.vehiclePlate").value("ABC1D23"))
 
 		mockMvc.perform(
 			post("/api/technician/ordens-servico/$osId/concluir-servicos")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_TECHNICIAN"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("FINALIZADA"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("FINALIZED"))
 
 		mockMvc.perform(
 			post("/api/attendant/ordens-servico/$osId/registrar-entrega")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ATTENDANT"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("ENTREGUE"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("DELIVERED"))
 
 		mockMvc.perform(
 			get("/api/admin/metricas/tempo-medio-execucao-servicos")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN"))),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$[0].servicoCatalogoId").value(UUID.fromString(servicoId).toString()))
+			.andExpect(jsonPath("$[0].catalogServiceId").value(UUID.fromString(servicoId).toString()))
 	}
 
 	@Test

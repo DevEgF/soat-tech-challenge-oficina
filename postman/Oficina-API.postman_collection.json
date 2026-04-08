@@ -1,8 +1,8 @@
 {
 	"info": {
 		"_postman_id": "a1b2c3d4-oficina-api",
-		"name": "Oficina — API (manual)",
-		"description": "# Como usar (leia isto primeiro)\n\n## 1. Base URL\nNa coleção: **Variables** → `baseUrl` = `http://localhost:8080` (ou a porta que o Docker mapear).\n\n## 2. Sem token primeiro\nExecute **Health** → `GET actuator/health` (deve responder 200).\n\n## 3. Login\nAbra **Auth (público)** → **Login admin** (ou atendente/técnico/almoxarife) → **Send**.\n- Body JSON: `username` e `password`.\n- **admin** / **admin** — se no Docker o `.env` tiver `APP_SECURITY_ADMIN_PASSWORD`, use esse valor em vez de `admin`.\n- Outros: password igual ao username (`atendente`/`atendente`, etc.).\n- Na resposta, copie o valor de **`accessToken`** (não existe campo `token`).\n\n## 4. Colar o token na variável certa\n**Collection** (clique na raiz) → **Variables**:\n- Depois do login **admin** → cole em **`admin_token`**\n- Login **atendente** → **`attendant_token`**\n- Login **técnico** → **`technician_token`**\n- Login **almoxarife** → **`warehouse_token`**\n\nCada pasta (Admin, Atendente, …) usa o Bearer dessa variável. **Se ficar vazio**, recebe 401.\n\n## 5. Fluxo mínimo Admin + OS\n1. Preencher **`admin_token`** (passo 4).\n2. **Admin → Serviços catálogo → POST criar serviço** → copie o **`id`** da resposta para variável **`servico_id`**.\n3. **Admin → Peças → POST criar peça** → copie **`id`** para **`peca_id`** (use `codigo` único se repetir testes).\n4. Preencher **`attendant_token`**, depois **Atendente → POST criar OS** — precisa de `servico_id` e `peca_id`.\n5. Copie da resposta **`id`** → **`os_id`**, **`codigoAcompanhamento`** → **`codigo_acompanhamento`**.\n\n## 6. Público (sem Bearer)\n**Público — OS** não usa token. Precisa de `documento_cliente` (só dígitos) e `codigo_acompanhamento` preenchidos.\n\n---\nCampos JSON: `precoCentavos`, `documentoCliente`, etc.",
+		"name": "Oficina — API",
+		"description": "# Como usar\n\n## 1. Base URL\nVariável `baseUrl` = `http://localhost:8080` (ajuste conforme a porta do Docker).\n\n## 2. Login (token automático)\nExecute qualquer request de **Login** — o script de Test captura o token automaticamente na variável correta (`admin_token`, `attendant_token`, etc.).\n\n## 3. Credenciais\n| Usuário | Senha |\n|---|---|\n| admin | admin (ou `APP_SECURITY_ADMIN_PASSWORD` do .env) |\n| atendente | atendente |\n| tecnico | tecnico |\n| almoxarife | almoxarife |\n\n## 4. Fluxo mínimo\n1. **Login admin** → token capturado automaticamente\n2. **Admin → Catalog Services → POST** → copie `id` para `service_id`\n3. **Admin → Parts → POST** → copie `id` para `part_id`\n4. **Login atendente** → token capturado automaticamente\n5. **Atendente → POST criar OS** (use `service_id` e `part_id`) → `os_id` e `tracking_code` capturados automaticamente\n6. Siga o swimlane: técnico → admin → atendente → cliente (público) → almoxarife → técnico\n\n## 5. Público (sem Bearer)\nEndpoints em **Public — Work Orders** não usam token. Precisam de `customer_tax_id` e `tracking_code`.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"auth": {
@@ -14,13 +14,13 @@
 		{ "key": "attendant_token", "value": "" },
 		{ "key": "technician_token", "value": "" },
 		{ "key": "warehouse_token", "value": "" },
-		{ "key": "cliente_id", "value": "" },
-		{ "key": "veiculo_id", "value": "" },
-		{ "key": "servico_id", "value": "" },
-		{ "key": "peca_id", "value": "" },
+		{ "key": "customer_id", "value": "" },
+		{ "key": "vehicle_id", "value": "" },
+		{ "key": "service_id", "value": "" },
+		{ "key": "part_id", "value": "" },
 		{ "key": "os_id", "value": "" },
-		{ "key": "codigo_acompanhamento", "value": "" },
-		{ "key": "documento_cliente", "value": "52998224725" }
+		{ "key": "tracking_code", "value": "" },
+		{ "key": "customer_tax_id", "value": "52998224725" }
 	],
 	"item": [
 		{
@@ -42,6 +42,21 @@
 			"item": [
 				{
 					"name": "Login admin",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.accessToken) {",
+									"    pm.collectionVariables.set('admin_token', json.accessToken);",
+									"    console.log('admin_token capturado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "POST",
@@ -55,6 +70,21 @@
 				},
 				{
 					"name": "Login atendente",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.accessToken) {",
+									"    pm.collectionVariables.set('attendant_token', json.accessToken);",
+									"    console.log('attendant_token capturado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "POST",
@@ -68,6 +98,21 @@
 				},
 				{
 					"name": "Login técnico",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.accessToken) {",
+									"    pm.collectionVariables.set('technician_token', json.accessToken);",
+									"    console.log('technician_token capturado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "POST",
@@ -81,6 +126,21 @@
 				},
 				{
 					"name": "Login almoxarife",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.accessToken) {",
+									"    pm.collectionVariables.set('warehouse_token', json.accessToken);",
+									"    console.log('warehouse_token capturado');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "POST",
@@ -102,178 +162,226 @@
 			},
 			"item": [
 				{
-					"name": "Clientes",
+					"name": "Customers",
 					"item": [
 						{
-							"name": "POST criar cliente",
+							"name": "POST create customer",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var json = pm.response.json();",
+											"if (json.id) pm.collectionVariables.set('customer_id', json.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"documento\": \"529.982.247-25\",\n  \"nome\": \"Maria Silva\",\n  \"email\": \"maria@example.com\",\n  \"telefone\": \"11999998888\"\n}"
+									"raw": "{\n  \"taxId\": \"529.982.247-25\",\n  \"name\": \"Maria Silva\",\n  \"email\": \"maria@example.com\",\n  \"phone\": \"11999998888\"\n}"
 								},
 								"url": "{{baseUrl}}/api/admin/clientes"
 							}
 						},
 						{
-							"name": "GET listar clientes",
+							"name": "GET list customers",
 							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/clientes" }
 						},
 						{
-							"name": "GET cliente por id",
-							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/clientes/{{cliente_id}}" }
+							"name": "GET customer by id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/clientes/{{customer_id}}" }
 						},
 						{
-							"name": "PUT atualizar cliente",
+							"name": "PUT update customer",
 							"request": {
 								"method": "PUT",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"documento\": \"529.982.247-25\",\n  \"nome\": \"Maria Silva Atualizada\",\n  \"email\": \"maria@example.com\",\n  \"telefone\": \"11988887777\"\n}"
+									"raw": "{\n  \"taxId\": \"529.982.247-25\",\n  \"name\": \"Maria Silva Atualizada\",\n  \"email\": \"maria@example.com\",\n  \"phone\": \"11988887777\"\n}"
 								},
-								"url": "{{baseUrl}}/api/admin/clientes/{{cliente_id}}"
+								"url": "{{baseUrl}}/api/admin/clientes/{{customer_id}}"
 							}
 						},
 						{
-							"name": "DELETE cliente",
-							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/clientes/{{cliente_id}}" }
+							"name": "DELETE customer",
+							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/clientes/{{customer_id}}" }
 						}
 					]
 				},
 				{
-					"name": "Veículos",
+					"name": "Vehicles",
 					"item": [
 						{
-							"name": "POST criar veículo",
+							"name": "POST create vehicle",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var json = pm.response.json();",
+											"if (json.id) pm.collectionVariables.set('vehicle_id', json.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"clienteId\": \"{{cliente_id}}\",\n  \"placa\": \"ABC1D23\",\n  \"marca\": \"Honda\",\n  \"modelo\": \"Civic\",\n  \"ano\": 2020\n}"
+									"raw": "{\n  \"customerId\": \"{{customer_id}}\",\n  \"plate\": \"ABC1D23\",\n  \"brand\": \"Honda\",\n  \"model\": \"Civic\",\n  \"year\": 2020\n}"
 								},
 								"url": "{{baseUrl}}/api/admin/veiculos"
 							}
 						},
 						{
-							"name": "GET listar veículos",
+							"name": "GET list vehicles",
 							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/veiculos" }
 						},
 						{
-							"name": "GET veículo por id",
-							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/veiculos/{{veiculo_id}}" }
+							"name": "GET vehicle by id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/veiculos/{{vehicle_id}}" }
 						}
 					]
 				},
 				{
-					"name": "Serviços catálogo",
+					"name": "Catalog Services",
 					"item": [
 						{
-							"name": "POST criar serviço",
+							"name": "POST create catalog service",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var json = pm.response.json();",
+											"if (json.id) pm.collectionVariables.set('service_id', json.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"nome\": \"Troca de óleo\",\n  \"descricao\": \"Troca de óleo e filtro\",\n  \"precoCentavos\": 15000,\n  \"tempoEstimadoMinutos\": 30\n}"
+									"raw": "{\n  \"name\": \"Oil change\",\n  \"description\": \"Oil and filter change\",\n  \"priceCents\": 15000,\n  \"estimatedMinutes\": 30\n}"
 								},
 								"url": "{{baseUrl}}/api/admin/servicos-catalogo"
 							}
 						},
 						{
-							"name": "GET listar serviços",
+							"name": "GET list catalog services",
 							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo" }
 						},
 						{
-							"name": "GET serviço por id",
-							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo/{{servico_id}}" }
+							"name": "GET catalog service by id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo/{{service_id}}" }
 						},
 						{
-							"name": "PUT atualizar serviço",
+							"name": "PUT update catalog service",
 							"request": {
 								"method": "PUT",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"nome\": \"Troca de óleo (atualizado)\",\n  \"descricao\": \"Inclui filtro\",\n  \"precoCentavos\": 16000,\n  \"tempoEstimadoMinutos\": 35\n}"
+									"raw": "{\n  \"name\": \"Oil change (updated)\",\n  \"description\": \"Includes filter\",\n  \"priceCents\": 16000,\n  \"estimatedMinutes\": 35\n}"
 								},
-								"url": "{{baseUrl}}/api/admin/servicos-catalogo/{{servico_id}}"
+								"url": "{{baseUrl}}/api/admin/servicos-catalogo/{{service_id}}"
 							}
 						},
 						{
-							"name": "DELETE serviço",
-							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo/{{servico_id}}" }
+							"name": "DELETE catalog service",
+							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/servicos-catalogo/{{service_id}}" }
 						}
 					]
 				},
 				{
-					"name": "Peças",
+					"name": "Parts",
 					"item": [
 						{
-							"name": "POST criar peça",
+							"name": "POST create part",
+							"event": [
+								{
+									"listen": "test",
+									"script": {
+										"exec": [
+											"var json = pm.response.json();",
+											"if (json.id) pm.collectionVariables.set('part_id', json.id);"
+										],
+										"type": "text/javascript"
+									}
+								}
+							],
 							"request": {
 								"method": "POST",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"codigo\": \"FILTRO-01\",\n  \"nome\": \"Filtro de óleo\",\n  \"precoCentavos\": 4500,\n  \"quantidadeEstoque\": 50,\n  \"pontoReposicao\": 10\n}"
+									"raw": "{\n  \"code\": \"FILTER-01\",\n  \"name\": \"Oil filter\",\n  \"priceCents\": 4500,\n  \"stockQuantity\": 50,\n  \"replenishmentPoint\": 10\n}"
 								},
 								"url": "{{baseUrl}}/api/admin/pecas"
 							}
 						},
 						{
-							"name": "GET listar peças",
+							"name": "GET list parts",
 							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/pecas" }
 						},
 						{
-							"name": "GET peça por id",
-							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}" }
+							"name": "GET part by id",
+							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/pecas/{{part_id}}" }
 						},
 						{
-							"name": "POST entrada mercadoria",
+							"name": "POST goods receipt",
 							"request": {
 								"method": "POST",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"quantidade\": 20,\n  \"referencia\": \"NF-12345\"\n}"
+									"raw": "{\n  \"quantity\": 20,\n  \"reference\": \"NF-12345\"\n}"
 								},
-								"url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}/entrada-mercadoria"
+								"url": "{{baseUrl}}/api/admin/pecas/{{part_id}}/entrada-mercadoria"
 							}
 						},
 						{
-							"name": "PUT atualizar peça",
+							"name": "PUT update part",
 							"request": {
 								"method": "PUT",
 								"header": [{ "key": "Content-Type", "value": "application/json" }],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"codigo\": \"FILTRO-01\",\n  \"nome\": \"Filtro de óleo premium\",\n  \"precoCentavos\": 5000,\n  \"quantidadeEstoque\": 70,\n  \"pontoReposicao\": 12\n}"
+									"raw": "{\n  \"code\": \"FILTER-01\",\n  \"name\": \"Premium oil filter\",\n  \"priceCents\": 5000,\n  \"stockQuantity\": 70,\n  \"replenishmentPoint\": 12\n}"
 								},
-								"url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}"
+								"url": "{{baseUrl}}/api/admin/pecas/{{part_id}}"
 							}
 						},
 						{
-							"name": "DELETE peça",
-							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/pecas/{{peca_id}}" }
+							"name": "DELETE part",
+							"request": { "method": "DELETE", "header": [], "url": "{{baseUrl}}/api/admin/pecas/{{part_id}}" }
 						}
 					]
 				},
 				{
-					"name": "Ordens de serviço",
+					"name": "Work Orders",
 					"item": [
 						{
-							"name": "GET listar OS",
+							"name": "GET list work orders",
 							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/ordens-servico" }
 						},
 						{
-							"name": "GET OS por id",
+							"name": "GET work order by id",
 							"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/admin/ordens-servico/{{os_id}}" }
 						},
 						{
-							"name": "POST aprovar plano interno",
+							"name": "POST approve internal plan",
 							"request": {
 								"method": "POST",
 								"header": [],
@@ -281,7 +389,7 @@
 							}
 						},
 						{
-							"name": "POST reprovar plano interno",
+							"name": "POST reject internal plan",
 							"request": {
 								"method": "POST",
 								"header": [],
@@ -291,10 +399,10 @@
 					]
 				},
 				{
-					"name": "Métricas",
+					"name": "Metrics",
 					"item": [
 						{
-							"name": "GET tempo médio execução serviços",
+							"name": "GET average service execution time",
 							"request": {
 								"method": "GET",
 								"header": [],
@@ -313,27 +421,40 @@
 			},
 			"item": [
 				{
-					"name": "POST criar OS",
+					"name": "POST create work order",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var json = pm.response.json();",
+									"if (json.id) pm.collectionVariables.set('os_id', json.id);",
+									"if (json.trackingCode) pm.collectionVariables.set('tracking_code', json.trackingCode);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [{ "key": "Content-Type", "value": "application/json" }],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"documentoCliente\": \"529.982.247-25\",\n  \"nomeCliente\": \"Maria Silva\",\n  \"placa\": \"ABC1D23\",\n  \"marca\": \"Honda\",\n  \"modelo\": \"Civic\",\n  \"anoVeiculo\": 2020,\n  \"servicos\": [\n    { \"servicoCatalogoId\": \"{{servico_id}}\", \"quantidade\": 1 }\n  ],\n  \"pecas\": [\n    { \"pecaId\": \"{{peca_id}}\", \"quantidade\": 2 }\n  ]\n}"
+							"raw": "{\n  \"customerTaxId\": \"529.982.247-25\",\n  \"customerName\": \"Maria Silva\",\n  \"customerEmail\": \"maria@example.com\",\n  \"customerPhone\": \"11999998888\",\n  \"plate\": \"ABC1D23\",\n  \"vehicleBrand\": \"Honda\",\n  \"vehicleModel\": \"Civic\",\n  \"vehicleYear\": 2020,\n  \"services\": [\n    { \"catalogServiceId\": \"{{service_id}}\", \"quantity\": 1 }\n  ],\n  \"parts\": [\n    { \"partId\": \"{{part_id}}\", \"quantity\": 2 }\n  ]\n}"
 						},
 						"url": "{{baseUrl}}/api/attendant/ordens-servico"
 					}
 				},
 				{
-					"name": "GET listar OS",
+					"name": "GET list work orders",
 					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/attendant/ordens-servico" }
 				},
 				{
-					"name": "GET OS por id",
+					"name": "GET work order by id",
 					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/attendant/ordens-servico/{{os_id}}" }
 				},
 				{
-					"name": "POST enviar orçamento ao cliente",
+					"name": "POST send quote to customer",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -341,7 +462,7 @@
 					}
 				},
 				{
-					"name": "POST voltar ao diagnóstico",
+					"name": "POST return to diagnosis",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -349,7 +470,7 @@
 					}
 				},
 				{
-					"name": "POST registrar entrega",
+					"name": "POST register delivery",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -366,15 +487,15 @@
 			},
 			"item": [
 				{
-					"name": "GET listar OS",
+					"name": "GET list work orders",
 					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/technician/ordens-servico" }
 				},
 				{
-					"name": "GET OS por id",
+					"name": "GET work order by id",
 					"request": { "method": "GET", "header": [], "url": "{{baseUrl}}/api/technician/ordens-servico/{{os_id}}" }
 				},
 				{
-					"name": "POST iniciar diagnóstico",
+					"name": "POST start diagnosis",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -382,7 +503,7 @@
 					}
 				},
 				{
-					"name": "POST submeter plano",
+					"name": "POST submit plan",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -390,7 +511,7 @@
 					}
 				},
 				{
-					"name": "POST concluir serviços",
+					"name": "POST complete services",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -407,7 +528,7 @@
 			},
 			"item": [
 				{
-					"name": "GET reservas pendentes (por OS)",
+					"name": "GET pending reservations (by work order)",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -415,7 +536,7 @@
 					}
 				},
 				{
-					"name": "POST confirmar saída (por OS)",
+					"name": "POST confirm stock exit (by work order)",
 					"request": {
 						"method": "POST",
 						"header": [],
@@ -423,7 +544,7 @@
 					}
 				},
 				{
-					"name": "GET alertas estoque baixo",
+					"name": "GET low stock alerts",
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -433,34 +554,34 @@
 			]
 		},
 		{
-			"name": "Público — OS (sem Bearer)",
+			"name": "Public — Work Orders (sem Bearer)",
 			"auth": { "type": "noauth" },
 			"item": [
 				{
-					"name": "GET acompanhar OS",
+					"name": "GET track work order",
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "GET",
 						"header": [],
-						"url": "{{baseUrl}}/api/public/os/acompanhar?documento={{documento_cliente}}&codigo={{codigo_acompanhamento}}"
+						"url": "{{baseUrl}}/api/public/os/acompanhar?documento={{customer_tax_id}}&codigo={{tracking_code}}"
 					}
 				},
 				{
-					"name": "POST aprovar orçamento",
+					"name": "POST approve quote",
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [],
-						"url": "{{baseUrl}}/api/public/os/aprovar-orcamento?documento={{documento_cliente}}&codigo={{codigo_acompanhamento}}"
+						"url": "{{baseUrl}}/api/public/os/aprovar-orcamento?documento={{customer_tax_id}}&codigo={{tracking_code}}"
 					}
 				},
 				{
-					"name": "POST reprovar orçamento",
+					"name": "POST reject quote",
 					"request": {
 						"auth": { "type": "noauth" },
 						"method": "POST",
 						"header": [],
-						"url": "{{baseUrl}}/api/public/os/reprovar-orcamento?documento={{documento_cliente}}&codigo={{codigo_acompanhamento}}"
+						"url": "{{baseUrl}}/api/public/os/reprovar-orcamento?documento={{customer_tax_id}}&codigo={{tracking_code}}"
 					}
 				}
 			]

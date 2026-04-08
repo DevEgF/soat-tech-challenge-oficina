@@ -1,8 +1,8 @@
 package com.soat.tech.challenge.oficina.presentation
 
 import com.soat.tech.challenge.oficina.application.WarehouseApplicationService
-import com.soat.tech.challenge.oficina.application.api.dto.EstoqueAlertaResponse
-import com.soat.tech.challenge.oficina.application.api.dto.ReservaPecaOsResponse
+import com.soat.tech.challenge.oficina.application.api.dto.LowStockAlertResponse
+import com.soat.tech.challenge.oficina.application.api.dto.PartReservationResponse
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
@@ -23,7 +23,7 @@ class WarehouseController(
 ) {
 
 	@GetMapping("/ordens-servico/{id}/reservas-pendentes")
-	fun listPendingReservations(@PathVariable id: UUID): List<ReservaPecaOsResponse> =
+	fun listPendingReservations(@PathVariable id: UUID): List<PartReservationResponse> =
 		warehouse.listPendingReservationsForWorkOrder(id)
 
 	@PostMapping("/ordens-servico/{id}/confirmar-saida")
@@ -33,5 +33,5 @@ class WarehouseController(
 	}
 
 	@GetMapping("/alertas-estoque-baixo")
-	fun lowStockAlerts(): List<EstoqueAlertaResponse> = warehouse.listLowStockAlerts()
+	fun lowStockAlerts(): List<LowStockAlertResponse> = warehouse.listLowStockAlerts()
 }

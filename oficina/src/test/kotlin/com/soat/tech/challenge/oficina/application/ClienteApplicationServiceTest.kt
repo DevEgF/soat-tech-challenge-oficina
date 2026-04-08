@@ -1,9 +1,11 @@
 package com.soat.tech.challenge.oficina.application
 
-import com.soat.tech.challenge.oficina.application.api.dto.ClienteRequest
-import com.soat.tech.challenge.oficina.domain.model.Cliente
-import com.soat.tech.challenge.oficina.domain.model.DocumentoFiscal
-import com.soat.tech.challenge.oficina.domain.port.ClienteRepository
+import com.soat.tech.challenge.oficina.application.api.dto.CustomerRequest
+import com.soat.tech.challenge.oficina.domain.exception.BusinessRuleException
+import com.soat.tech.challenge.oficina.domain.exception.NotFoundException
+import com.soat.tech.challenge.oficina.domain.model.Customer
+import com.soat.tech.challenge.oficina.domain.model.TaxDocument
+import com.soat.tech.challenge.oficina.domain.port.CustomerRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -15,10 +17,10 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class ClienteApplicationServiceTest {
+class CustomerApplicationServiceTest {
 
-	private val repo = mockk<ClienteRepository>()
-	private val service = ClienteApplicationService(repo)
+	private val repo = mockk<CustomerRepository>()
+	private val service = CustomerApplicationService(repo)
 
 	@Nested
 	@DisplayName("Given unique tax document")
@@ -27,10 +29,10 @@ class ClienteApplicationServiceTest {
 		@Test
 		@DisplayName("when create then saves and returns name")
 		fun createPersists() {
-			val doc = DocumentoFiscal.parse("52998224725")
+			val doc = TaxDocument.parse("52998224725")
 			every { repo.findByFiscalDocument(doc) } returns Optional.empty()
 			every { repo.save(any()) } answers { firstArg() }
-			val r = service.create(ClienteRequest(taxIdDigits = "52998224725", name = "Ana"))
+			val r = service.create(CustomerRequest(taxIdDigits = "52998224725", name = "Ana"))
 			assertEquals("Ana", r.name)
 			verify(exactly = 1) { repo.save(any()) }
 		}
@@ -43,11 +45,11 @@ class ClienteApplicationServiceTest {
 		@Test
 		@DisplayName("when create then throws")
 		fun createFails() {
-			val doc = DocumentoFiscal.parse("52998224725")
-			val existing = Cliente(UUID.randomUUID(), doc, "X")
+			val doc = TaxDocument.parse("52998224725")
+			val existing = Customer(UUID.randomUUID(), doc, "X")
 			every { repo.findByFiscalDocument(doc) } returns Optional.of(existing)
-			assertFailsWith<IllegalArgumentException> {
-				service.create(ClienteRequest(taxIdDigits = "52998224725", name = "Ana"))
+			assertFailsWith<BusinessRuleException> {
+				service.create(CustomerRequest(taxIdDigits = "52998224725", name = "Ana"))
 			}
 		}
 	}
@@ -60,7 +62,7 @@ class ClienteApplicationServiceTest {
 		@DisplayName("when get then returns customer")
 		fun getReturns() {
 			val id = UUID.randomUUID()
-			val c = Cliente(id, DocumentoFiscal.parse("52998224725"), "Ana")
+			val c = Customer(id, TaxDocument.parse("52998224725"), "Ana")
 			every { repo.findById(id) } returns Optional.of(c)
 			assertEquals("Ana", service.get(id).name)
 		}
@@ -89,12 +91,12 @@ class ClienteApplicationServiceTest {
 		@DisplayName("when update then new name persisted")
 		fun update() {
 			val id = UUID.randomUUID()
-			val doc = DocumentoFiscal.parse("52998224725")
-			val existing = Cliente(id, doc, "Old")
+			val doc = TaxDocument.parse("52998224725")
+			val existing = Customer(id, doc, "Old")
 			every { repo.findById(id) } returns Optional.of(existing)
 			every { repo.findByFiscalDocument(doc) } returns Optional.of(existing)
 			every { repo.save(any()) } answers { firstArg() }
-			val r = service.update(id, ClienteRequest(taxIdDigits = "52998224725", name = "New"))
+			val r = service.update(id, CustomerRequest(taxIdDigits = "52998224725", name = "New"))
 			assertEquals("New", r.name)
 		}
 	}
@@ -104,7 +106,7 @@ class ClienteApplicationServiceTest {
 	fun delete() {
 		val id = UUID.randomUUID()
 		every { repo.findById(id) } returns Optional.of(
-			Cliente(id, DocumentoFiscal.parse("52998224725"), "A"),
+			Customer(id, TaxDocument.parse("52998224725"), "A"),
 		)
 		every { repo.deleteById(id) } returns Unit
 		service.delete(id)

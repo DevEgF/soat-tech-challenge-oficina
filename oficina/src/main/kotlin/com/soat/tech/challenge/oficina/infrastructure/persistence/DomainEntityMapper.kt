@@ -1,31 +1,31 @@
 package com.soat.tech.challenge.oficina.infrastructure.persistence
 
-import com.soat.tech.challenge.oficina.domain.model.Cliente
-import com.soat.tech.challenge.oficina.domain.model.DocumentoFiscal
-import com.soat.tech.challenge.oficina.domain.model.LinhaPecaOrdem
-import com.soat.tech.challenge.oficina.domain.model.LinhaServicoOrdem
-import com.soat.tech.challenge.oficina.domain.model.OrdemServico
-import com.soat.tech.challenge.oficina.domain.model.Peca
-import com.soat.tech.challenge.oficina.domain.model.PlacaVeiculo
-import com.soat.tech.challenge.oficina.domain.model.ServicoCatalogo
-import com.soat.tech.challenge.oficina.domain.model.StatusOrdemServico
-import com.soat.tech.challenge.oficina.domain.model.Veiculo
-import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.ClienteEntity
-import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.OrdemServicoEntity
-import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.PecaEntity
-import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.ServicoCatalogoEntity
-import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.VeiculoEntity
+import com.soat.tech.challenge.oficina.domain.model.Customer
+import com.soat.tech.challenge.oficina.domain.model.TaxDocument
+import com.soat.tech.challenge.oficina.domain.model.PartLine
+import com.soat.tech.challenge.oficina.domain.model.ServiceLine
+import com.soat.tech.challenge.oficina.domain.model.WorkOrder
+import com.soat.tech.challenge.oficina.domain.model.Part
+import com.soat.tech.challenge.oficina.domain.model.LicensePlate
+import com.soat.tech.challenge.oficina.domain.model.CatalogService
+import com.soat.tech.challenge.oficina.domain.model.WorkOrderStatus
+import com.soat.tech.challenge.oficina.domain.model.Vehicle
+import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.CustomerEntity
+import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.WorkOrderEntity
+import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.PartEntity
+import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.CatalogServiceEntity
+import com.soat.tech.challenge.oficina.infrastructure.jpa.entity.VehicleEntity
 import java.util.UUID
 
-fun ClienteEntity.toDomain(): Cliente = Cliente(
+fun CustomerEntity.toDomain(): Customer = Customer(
 	id = UUID.fromString(id),
-	fiscalDocument = DocumentoFiscal.parse(documentDigits),
+	fiscalDocument = TaxDocument.parse(documentDigits),
 	name = name,
 	email = email,
 	phone = phone,
 )
 
-fun Cliente.toEntity(): ClienteEntity = ClienteEntity(
+fun Customer.toEntity(): CustomerEntity = CustomerEntity(
 	id = id.toString(),
 	documentDigits = fiscalDocument.digits,
 	name = name,
@@ -33,16 +33,16 @@ fun Cliente.toEntity(): ClienteEntity = ClienteEntity(
 	phone = phone,
 )
 
-fun VeiculoEntity.toDomain(): Veiculo = Veiculo(
+fun VehicleEntity.toDomain(): Vehicle = Vehicle(
 	id = UUID.fromString(id),
 	customerId = UUID.fromString(customer!!.id),
-	licensePlate = PlacaVeiculo.parse(licensePlate),
+	licensePlate = LicensePlate.parse(licensePlate),
 	brand = brand,
 	model = model,
 	year = year,
 )
 
-fun ServicoCatalogoEntity.toDomain(): ServicoCatalogo = ServicoCatalogo(
+fun CatalogServiceEntity.toDomain(): CatalogService = CatalogService(
 	id = UUID.fromString(id),
 	name = name,
 	description = description,
@@ -50,7 +50,7 @@ fun ServicoCatalogoEntity.toDomain(): ServicoCatalogo = ServicoCatalogo(
 	estimatedMinutes = estimatedMinutes,
 )
 
-fun PecaEntity.toDomain(): Peca = Peca(
+fun PartEntity.toDomain(): Part = Part(
 	id = UUID.fromString(id),
 	code = code,
 	name = name,
@@ -59,27 +59,27 @@ fun PecaEntity.toDomain(): Peca = Peca(
 	replenishmentPoint = replenishmentPoint,
 )
 
-fun OrdemServicoEntity.toDomain(): OrdemServico {
+fun WorkOrderEntity.toDomain(): WorkOrder {
 	val linesS = serviceLines.toList().map {
-		LinhaServicoOrdem(
+		ServiceLine(
 			catalogServiceId = UUID.fromString(it.catalogService!!.id),
 			quantity = it.quantity,
 			unitPriceCents = it.unitPriceCents,
 		)
-	}.toMutableList()
+	}
 	val linesP = partLines.toList().map {
-		LinhaPecaOrdem(
+		PartLine(
 			partId = UUID.fromString(it.part!!.id),
 			quantity = it.quantity,
 			unitPriceCents = it.unitPriceCents,
 		)
-	}.toMutableList()
-	return OrdemServico(
+	}
+	return WorkOrder(
 		id = UUID.fromString(id),
 		trackingCode = trackingCode,
 		customerId = UUID.fromString(customer!!.id),
 		vehicleId = UUID.fromString(vehicle!!.id),
-		status = StatusOrdemServico.valueOf(status),
+		status = WorkOrderStatus.valueOf(status),
 		serviceLines = linesS,
 		partLines = linesP,
 		servicesTotalCents = servicesTotalCents,
@@ -94,5 +94,6 @@ fun OrdemServicoEntity.toDomain(): OrdemServico {
 		completedAt = completedAt,
 		deliveredAt = deliveredAt,
 		cancelledAt = cancelledAt,
+		returnedToDiagnosisAt = returnedToDiagnosisAt,
 	)
 }

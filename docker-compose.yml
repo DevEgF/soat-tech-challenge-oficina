@@ -8,7 +8,7 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U oficina -d oficina"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-oficina} -d ${POSTGRES_DB:-oficina}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -27,7 +27,6 @@ services:
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-oficina}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       APP_JWT_SECRET: ${APP_JWT_SECRET:-troque-este-segredo-por-um-valor-longo-aleatorio-em-producao}
-      APP_SECURITY_ADMIN_USERNAME: ${APP_SECURITY_ADMIN_USERNAME:-admin}
       # Mesmo default que application.properties (admin/admin) para não surpreender no Postman
       APP_SECURITY_ADMIN_PASSWORD: ${APP_SECURITY_ADMIN_PASSWORD:-admin}
     depends_on:

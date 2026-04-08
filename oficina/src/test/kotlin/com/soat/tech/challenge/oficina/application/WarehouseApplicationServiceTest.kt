@@ -1,12 +1,13 @@
 package com.soat.tech.challenge.oficina.application
 
-import com.soat.tech.challenge.oficina.domain.model.OrdemServico
-import com.soat.tech.challenge.oficina.domain.model.Peca
-import com.soat.tech.challenge.oficina.domain.model.ReservaPecaOs
-import com.soat.tech.challenge.oficina.domain.model.StatusReservaPecaOs
-import com.soat.tech.challenge.oficina.domain.port.OrdemServicoRepository
-import com.soat.tech.challenge.oficina.domain.port.PecaRepository
-import com.soat.tech.challenge.oficina.domain.port.ReservaPecaOsRepository
+import com.soat.tech.challenge.oficina.domain.exception.NotFoundException
+import com.soat.tech.challenge.oficina.domain.model.WorkOrder
+import com.soat.tech.challenge.oficina.domain.model.Part
+import com.soat.tech.challenge.oficina.domain.model.PartReservation
+import com.soat.tech.challenge.oficina.domain.model.PartReservationStatus
+import com.soat.tech.challenge.oficina.domain.port.WorkOrderRepository
+import com.soat.tech.challenge.oficina.domain.port.PartRepository
+import com.soat.tech.challenge.oficina.domain.port.PartReservationRepository
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -20,9 +21,9 @@ import org.junit.jupiter.api.Test
 
 class WarehouseApplicationServiceTest {
 
-	private val reservations = mockk<ReservaPecaOsRepository>(relaxed = true)
-	private val workOrders = mockk<OrdemServicoRepository>()
-	private val parts = mockk<PecaRepository>()
+	private val reservations = mockk<PartReservationRepository>(relaxed = true)
+	private val workOrders = mockk<WorkOrderRepository>()
+	private val parts = mockk<PartRepository>()
 	private val service = WarehouseApplicationService(reservations, workOrders, parts)
 
 	@Nested
@@ -45,7 +46,7 @@ class WarehouseApplicationServiceTest {
 		@Test
 		@DisplayName("when pending rows exist then maps part name")
 		fun mapsRows() {
-			val wo = OrdemServico.create(
+			val wo = WorkOrder.create(
 				id = woId,
 				customerId = UUID.randomUUID(),
 				vehicleId = UUID.randomUUID(),
@@ -53,28 +54,28 @@ class WarehouseApplicationServiceTest {
 				partLines = emptyList(),
 			)
 			every { workOrders.findById(woId) } returns Optional.of(wo)
-			val row = ReservaPecaOs(
+			val row = PartReservation(
 				id = reservaId,
 				workOrderId = woId,
 				partId = partId,
 				quantity = 3,
-				status = StatusReservaPecaOs.PENDENTE,
+				status = PartReservationStatus.PENDING,
 			)
 			every { reservations.findPendingByWorkOrder(woId) } returns listOf(row)
 			every { parts.findById(partId) } returns Optional.of(
-				Peca(partId, "C", "NomePeca", 100, 10, replenishmentPoint = 2),
+				Part(partId, "C", "NomePart", 100, 10, replenishmentPoint = 2),
 			)
 			val out = service.listPendingReservationsForWorkOrder(woId)
 			assertEquals(1, out.size)
-			assertEquals("NomePeca", out[0].partName)
+			assertEquals("NomePart", out[0].partName)
 			assertEquals(3, out[0].quantity)
-			assertEquals("PENDENTE", out[0].status)
+			assertEquals("PENDING", out[0].status)
 		}
 
 		@Test
 		@DisplayName("when part missing then empty part name")
 		fun partMissing() {
-			val wo = OrdemServico.create(
+			val wo = WorkOrder.create(
 				id = woId,
 				customerId = UUID.randomUUID(),
 				vehicleId = UUID.randomUUID(),
@@ -82,12 +83,12 @@ class WarehouseApplicationServiceTest {
 				partLines = emptyList(),
 			)
 			every { workOrders.findById(woId) } returns Optional.of(wo)
-			val row = ReservaPecaOs(
+			val row = PartReservation(
 				id = reservaId,
 				workOrderId = woId,
 				partId = partId,
 				quantity = 1,
-				status = StatusReservaPecaOs.PENDENTE,
+				status = PartReservationStatus.PENDING,
 			)
 			every { reservations.findPendingByWorkOrder(woId) } returns listOf(row)
 			every { parts.findById(partId) } returns Optional.empty()
@@ -114,7 +115,7 @@ class WarehouseApplicationServiceTest {
 		@DisplayName("when ok then delegates to reservations")
 		fun delegates() {
 			val id = UUID.randomUUID()
-			val wo = OrdemServico.create(
+			val wo = WorkOrder.create(
 				id = id,
 				customerId = UUID.randomUUID(),
 				vehicleId = UUID.randomUUID(),
@@ -135,7 +136,7 @@ class WarehouseApplicationServiceTest {
 		@DisplayName("when parts below replenishment then includes pending reserved sum")
 		fun listsAlerts() {
 			val pid = UUID.randomUUID()
-			val p = Peca(pid, "X", "Y", 50, 1, replenishmentPoint = 5)
+			val p = Part(pid, "X", "Y", 50, 1, replenishmentPoint = 5)
 			every { parts.findAllAtOrBelowReplenishment() } returns listOf(p)
 			every { reservations.sumPendingReservedQuantity(pid) } returns 2
 			val out = service.listLowStockAlerts()

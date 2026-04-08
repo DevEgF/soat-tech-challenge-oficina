@@ -1,20 +1,20 @@
 package com.soat.tech.challenge.oficina.application.api
 
-import com.soat.tech.challenge.oficina.application.api.dto.ClienteResponse
-import com.soat.tech.challenge.oficina.application.api.dto.OrdemServicoLinhaPecaResponse
-import com.soat.tech.challenge.oficina.application.api.dto.OrdemServicoLinhaServicoResponse
-import com.soat.tech.challenge.oficina.application.api.dto.OrdemServicoResponse
-import com.soat.tech.challenge.oficina.application.api.dto.PecaResponse
-import com.soat.tech.challenge.oficina.application.api.dto.ServicoCatalogoResponse
-import com.soat.tech.challenge.oficina.application.api.dto.VeiculoResponse
-import com.soat.tech.challenge.oficina.domain.model.Cliente
-import com.soat.tech.challenge.oficina.domain.model.OrdemServico
-import com.soat.tech.challenge.oficina.domain.model.Peca
-import com.soat.tech.challenge.oficina.domain.model.ServicoCatalogo
-import com.soat.tech.challenge.oficina.domain.model.Veiculo
+import com.soat.tech.challenge.oficina.application.api.dto.CustomerResponse
+import com.soat.tech.challenge.oficina.application.api.dto.WorkOrderPartLineResponse
+import com.soat.tech.challenge.oficina.application.api.dto.WorkOrderServiceLineResponse
+import com.soat.tech.challenge.oficina.application.api.dto.WorkOrderResponse
+import com.soat.tech.challenge.oficina.application.api.dto.PartResponse
+import com.soat.tech.challenge.oficina.application.api.dto.CatalogServiceResponse
+import com.soat.tech.challenge.oficina.application.api.dto.VehicleResponse
+import com.soat.tech.challenge.oficina.domain.model.Customer
+import com.soat.tech.challenge.oficina.domain.model.WorkOrder
+import com.soat.tech.challenge.oficina.domain.model.Part
+import com.soat.tech.challenge.oficina.domain.model.CatalogService
+import com.soat.tech.challenge.oficina.domain.model.Vehicle
 import java.util.UUID
 
-fun Cliente.toResponse(): ClienteResponse = ClienteResponse(
+fun Customer.toResponse(): CustomerResponse = CustomerResponse(
 	id = id,
 	taxIdDigits = fiscalDocument.digits,
 	name = name,
@@ -22,7 +22,7 @@ fun Cliente.toResponse(): ClienteResponse = ClienteResponse(
 	phone = phone,
 )
 
-fun Veiculo.toResponse(): VeiculoResponse = VeiculoResponse(
+fun Vehicle.toResponse(): VehicleResponse = VehicleResponse(
 	id = id,
 	customerId = customerId,
 	plate = licensePlate.normalized,
@@ -31,7 +31,7 @@ fun Veiculo.toResponse(): VeiculoResponse = VeiculoResponse(
 	year = year,
 )
 
-fun ServicoCatalogo.toResponse(): ServicoCatalogoResponse = ServicoCatalogoResponse(
+fun CatalogService.toResponse(): CatalogServiceResponse = CatalogServiceResponse(
 	id = id,
 	name = name,
 	description = description,
@@ -39,7 +39,7 @@ fun ServicoCatalogo.toResponse(): ServicoCatalogoResponse = ServicoCatalogoRespo
 	estimatedMinutes = estimatedMinutes,
 )
 
-fun Peca.toResponse(): PecaResponse = PecaResponse(
+fun Part.toResponse(): PartResponse = PartResponse(
 	id = id,
 	code = code,
 	name = name,
@@ -48,10 +48,10 @@ fun Peca.toResponse(): PecaResponse = PecaResponse(
 	replenishmentPoint = replenishmentPoint,
 )
 
-fun OrdemServico.toResponse(
+fun WorkOrder.toResponse(
 	serviceName: (UUID) -> String? = { null },
 	partName: (UUID) -> String? = { null },
-): OrdemServicoResponse = OrdemServicoResponse(
+): WorkOrderResponse = WorkOrderResponse(
 	id = id,
 	trackingCode = trackingCode,
 	customerId = customerId,
@@ -61,7 +61,7 @@ fun OrdemServico.toResponse(
 	partsTotalCents = partsTotalCents,
 	totalCents = totalCents,
 	services = serviceLines.map {
-		OrdemServicoLinhaServicoResponse(
+		WorkOrderServiceLineResponse(
 			catalogServiceId = it.catalogServiceId,
 			serviceName = serviceName(it.catalogServiceId),
 			quantity = it.quantity,
@@ -69,7 +69,7 @@ fun OrdemServico.toResponse(
 		)
 	},
 	parts = partLines.map {
-		OrdemServicoLinhaPecaResponse(
+		WorkOrderPartLineResponse(
 			partId = it.partId,
 			partName = partName(it.partId),
 			quantity = it.quantity,

@@ -1,9 +1,11 @@
 package com.soat.tech.challenge.oficina.application
 
-import com.soat.tech.challenge.oficina.application.api.dto.EntradaMercadoriaRequest
-import com.soat.tech.challenge.oficina.application.api.dto.PecaRequest
-import com.soat.tech.challenge.oficina.domain.model.Peca
-import com.soat.tech.challenge.oficina.domain.port.PecaRepository
+import com.soat.tech.challenge.oficina.application.api.dto.GoodsReceiptRequest
+import com.soat.tech.challenge.oficina.application.api.dto.PartRequest
+import com.soat.tech.challenge.oficina.domain.exception.BusinessRuleException
+import com.soat.tech.challenge.oficina.domain.exception.NotFoundException
+import com.soat.tech.challenge.oficina.domain.model.Part
+import com.soat.tech.challenge.oficina.domain.port.PartRepository
 import io.mockk.every
 import io.mockk.mockk
 import java.util.Optional
@@ -14,10 +16,10 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 
-class PecaApplicationServiceTest {
+class PartApplicationServiceTest {
 
-	private val repo = mockk<PecaRepository>()
-	private val service = PecaApplicationService(repo)
+	private val repo = mockk<PartRepository>()
+	private val service = PartApplicationService(repo)
 
 	@Nested
 	@DisplayName("Given new part code")
@@ -28,7 +30,7 @@ class PecaApplicationServiceTest {
 		fun create() {
 			every { repo.findByCode("P1") } returns Optional.empty()
 			every { repo.save(any()) } answers { firstArg() }
-			val r = service.create(PecaRequest(code = "P1", name = "Filtro", priceCents = 10, stockQuantity = 5))
+			val r = service.create(PartRequest(code = "P1", name = "Filtro", priceCents = 10, stockQuantity = 5))
 			assertEquals("P1", r.code)
 		}
 	}
@@ -41,10 +43,10 @@ class PecaApplicationServiceTest {
 		@DisplayName("when create then throws")
 		fun duplicate() {
 			every { repo.findByCode("P1") } returns Optional.of(
-				Peca(UUID.randomUUID(), "P1", "X", 1, 1),
+				Part(UUID.randomUUID(), "P1", "X", 1, 1),
 			)
-			assertFailsWith<IllegalArgumentException> {
-				service.create(PecaRequest(code = "P1", name = "Filtro", priceCents = 10, stockQuantity = 5))
+			assertFailsWith<BusinessRuleException> {
+				service.create(PartRequest(code = "P1", name = "Filtro", priceCents = 10, stockQuantity = 5))
 			}
 		}
 	}
@@ -57,11 +59,11 @@ class PecaApplicationServiceTest {
 		@DisplayName("when update with new code then returns new price")
 		fun update() {
 			val id = UUID.randomUUID()
-			val p = Peca(id, "P1", "N", 5, 1)
+			val p = Part(id, "P1", "N", 5, 1)
 			every { repo.findById(id) } returns Optional.of(p)
 			every { repo.findByCode("P2") } returns Optional.of(p)
 			every { repo.save(any()) } answers { firstArg() }
-			val out = service.update(id, PecaRequest(code = "P2", name = "N2", priceCents = 6, stockQuantity = 2))
+			val out = service.update(id, PartRequest(code = "P2", name = "N2", priceCents = 6, stockQuantity = 2))
 			assertEquals(6, out.priceCents)
 		}
 	}
@@ -74,10 +76,10 @@ class PecaApplicationServiceTest {
 		@DisplayName("when part exists then increases stock")
 		fun receipt() {
 			val id = UUID.randomUUID()
-			val p = Peca(id, "P1", "N", 5, 10)
+			val p = Part(id, "P1", "N", 5, 10)
 			every { repo.findById(id) } returns Optional.of(p)
 			every { repo.save(any()) } answers { firstArg() }
-			val out = service.recordGoodsReceipt(id, EntradaMercadoriaRequest(quantity = 3, reference = "NF-1"))
+			val out = service.recordGoodsReceipt(id, GoodsReceiptRequest(quantity = 3, reference = "NF-1"))
 			assertEquals(13, out.stockQuantity)
 		}
 
@@ -87,7 +89,7 @@ class PecaApplicationServiceTest {
 			val id = UUID.randomUUID()
 			every { repo.findById(id) } returns Optional.empty()
 			assertFailsWith<NotFoundException> {
-				service.recordGoodsReceipt(id, EntradaMercadoriaRequest(quantity = 1))
+				service.recordGoodsReceipt(id, GoodsReceiptRequest(quantity = 1))
 			}
 		}
 	}
@@ -99,14 +101,14 @@ class PecaApplicationServiceTest {
 		@Test
 		fun list() {
 			val id = UUID.randomUUID()
-			every { repo.findAll() } returns listOf(Peca(id, "A", "B", 1, 0))
+			every { repo.findAll() } returns listOf(Part(id, "A", "B", 1, 0))
 			assertEquals(1, service.list().size)
 		}
 
 		@Test
 		fun get() {
 			val id = UUID.randomUUID()
-			every { repo.findById(id) } returns Optional.of(Peca(id, "A", "B", 1, 0))
+			every { repo.findById(id) } returns Optional.of(Part(id, "A", "B", 1, 0))
 			assertEquals("A", service.get(id).code)
 		}
 
@@ -125,7 +127,7 @@ class PecaApplicationServiceTest {
 		@Test
 		fun ok() {
 			val id = UUID.randomUUID()
-			every { repo.findById(id) } returns Optional.of(Peca(id, "A", "B", 1, 0))
+			every { repo.findById(id) } returns Optional.of(Part(id, "A", "B", 1, 0))
 			every { repo.deleteById(id) } returns Unit
 			service.delete(id)
 		}

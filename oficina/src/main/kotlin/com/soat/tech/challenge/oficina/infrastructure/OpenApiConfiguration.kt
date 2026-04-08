@@ -19,7 +19,7 @@ class OpenApiConfiguration {
 					"MVP oficina: fluxo por papéis (swimlane). JWT via POST /api/public/auth/login. " +
 						"Prefixos: /api/admin (SCOPE_ADMIN), /api/attendant (SCOPE_ATTENDANT), " +
 						"/api/technician (SCOPE_TECHNICIAN), /api/warehouse (SCOPE_WAREHOUSE). " +
-						"Cliente: GET/POST /api/public/os/* sem token.",
+						"Customer: GET/POST /api/public/os/* sem token.",
 				)
 				.version("1.0.0"),
 		)
