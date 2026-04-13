@@ -14,7 +14,11 @@
       "Bash(javap -p \"org/springframework/security/authentication/dao/DaoAuthenticationProvider.class\")",
       "Bash(javap -p -c \"org/springframework/security/authentication/dao/DaoAuthenticationProvider.class\")",
       "Bash(python3)",
-      "Bash(./gradlew test:*)"
+      "Bash(./gradlew test:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git add:*)"
     ]
   }
 }
