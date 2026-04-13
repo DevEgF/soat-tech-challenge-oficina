@@ -1,0 +1,252 @@
+package com.soat.tech.challenge.oficina.application
+
+import com.soat.tech.challenge.oficina.application.api.dto.WorkOrderTrackingResponse
+import com.soat.tech.challenge.oficina.application.api.dto.CreateWorkOrderRequest
+import com.soat.tech.challenge.oficina.application.api.dto.WorkOrderResponse
+import com.soat.tech.challenge.oficina.application.api.toResponse
+import com.soat.tech.challenge.oficina.domain.exception.BusinessRuleException
+import com.soat.tech.challenge.oficina.domain.exception.InsufficientStockException
+import com.soat.tech.challenge.oficina.domain.exception.NotFoundException
+import com.soat.tech.challenge.oficina.domain.model.Customer
+import com.soat.tech.challenge.oficina.domain.model.TaxDocument
+import com.soat.tech.challenge.oficina.domain.model.PartLine
+import com.soat.tech.challenge.oficina.domain.model.ServiceLine
+import com.soat.tech.challenge.oficina.domain.model.WorkOrder
+import com.soat.tech.challenge.oficina.domain.model.LicensePlate
+import com.soat.tech.challenge.oficina.domain.model.Vehicle
+import com.soat.tech.challenge.oficina.domain.port.CustomerRepository
+import com.soat.tech.challenge.oficina.domain.port.WorkOrderRepository
+import com.soat.tech.challenge.oficina.domain.port.PartRepository
+import com.soat.tech.challenge.oficina.domain.port.PartReservationRepository
+import com.soat.tech.challenge.oficina.domain.port.CatalogServiceRepository
+import com.soat.tech.challenge.oficina.domain.port.VehicleRepository
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
+import java.util.UUID
+
+@Service
+class WorkOrderApplicationService(
+	private val workOrders: WorkOrderRepository,
+	private val customers: CustomerRepository,
+	private val vehicles: VehicleRepository,
+	private val catalogServices: CatalogServiceRepository,
+	private val parts: PartRepository,
+	private val reservations: PartReservationRepository,
+	private val clock: Clock,
+) {
+
+	private fun catalogServiceName(id: UUID): String? =
+		catalogServices.findById(id).map { it.name }.orElse(null)
+
+	private fun partName(id: UUID): String? =
+		parts.findById(id).map { it.name }.orElse(null)
+
+	private fun WorkOrder.toDto(): WorkOrderResponse =
+		toResponse({ catalogServiceName(it) }, { partName(it) })
+
+	private fun now() = clock.instant()
+
+	private fun validateAndReplaceReservations(wo: WorkOrder) {
+		val map = wo.partLines.associate { it.partId to it.quantity }
+		for ((partId, need) in map) {
+			val part = parts.findById(partId).orElseThrow { NotFoundException("Part not found") }
+			val reservedElsewhere = reservations.sumPendingReservedQuantityExcludingWorkOrder(partId, wo.id)
+			val available = part.stockQuantity - reservedElsewhere
+			if (need > available) {
+				throw InsufficientStockException(partId.toString(), need, available)
+			}
+		}
+		reservations.replacePendingReservations(wo.id, map)
+	}
+
+	private fun cancelReservationsIfAny(woId: UUID) {
+		reservations.cancelPendingForWorkOrder(woId)
+	}
+
+	@Transactional
+	fun create(req: CreateWorkOrderRequest): WorkOrderResponse {
+		val doc = TaxDocument.parse(req.customerTaxIdDigits)
+		val customer = customers.findByFiscalDocument(doc).orElseGet {
+			customers.save(
+				Customer(
+					id = UUID.randomUUID(),
+					fiscalDocument = doc,
+					name = req.customerName.trim(),
+					email = req.customerEmail?.trim()?.takeIf { it.isNotEmpty() },
+					phone = req.customerPhone?.trim()?.takeIf { it.isNotEmpty() },
+				),
+			)
+		}
+		val plate = LicensePlate.parse(req.plate)
+		val vehicle = vehicles.findByLicensePlate(plate).orElseGet {
+			vehicles.save(
+				Vehicle(
+					id = UUID.randomUUID(),
+					customerId = customer.id,
+					licensePlate = plate,
+					brand = req.vehicleBrand.trim(),
+					model = req.vehicleModel.trim(),
+					year = req.vehicleYear!!,
+				),
+			)
+		}
+		if (vehicle.customerId != customer.id) {
+			throw BusinessRuleException("Vehicle belongs to another customer")
+		}
+		val serviceLines = req.services.map { s ->
+			val cat = catalogServices.findById(s.catalogServiceId!!)
+				.orElseThrow { NotFoundException("Catalog service not found") }
+			ServiceLine(
+				catalogServiceId = cat.id,
+				quantity = s.quantity!!,
+				unitPriceCents = cat.priceCents,
+			)
+		}
+		val partLines = req.parts.map { p ->
+			val part = parts.findById(p.partId!!)
+				.orElseThrow { NotFoundException("Part not found") }
+			PartLine(
+				partId = part.id,
+				quantity = p.quantity!!,
+				unitPriceCents = part.priceCents,
+			)
+		}
+		val wo = WorkOrder.create(
+			customerId = customer.id,
+			vehicleId = vehicle.id,
+			serviceLines = serviceLines,
+			partLines = partLines,
+		)
+		return workOrders.save(wo).toDto()
+	}
+
+	@Transactional(readOnly = true)
+	fun list(): List<WorkOrderResponse> = workOrders.findAll().map { it.toDto() }
+
+	@Transactional(readOnly = true)
+	fun get(id: UUID): WorkOrderResponse =
+		workOrders.findById(id).map { it.toDto() }.orElseThrow { NotFoundException("Work order not found") }
+
+	@Transactional(readOnly = true)
+	fun track(customerTaxIdDigits: String, trackingCode: String): WorkOrderTrackingResponse {
+		val doc = TaxDocument.parse(customerTaxIdDigits)
+		val wo = workOrders.findByTrackingCode(trackingCode.trim())
+			.orElseThrow { NotFoundException("Work order not found") }
+		val customer = customers.findById(wo.customerId).orElseThrow { NotFoundException("Customer not found") }
+		if (customer.fiscalDocument.digits != doc.digits) {
+			throw BusinessRuleException("Document does not match this work order")
+		}
+		val vehicle = vehicles.findById(wo.vehicleId).orElseThrow { NotFoundException("Vehicle not found") }
+		return WorkOrderTrackingResponse(
+			trackingCode = wo.trackingCode,
+			status = wo.status,
+			totalCents = wo.totalCents,
+			vehiclePlate = vehicle.licensePlate.normalized,
+			maskedCustomerTaxId = maskTaxId(doc.digits),
+		)
+	}
+
+	private fun maskTaxId(d: String): String = when (d.length) {
+		11 -> "***.${d.take(3)}.${d.substring(3, 6)}-**"
+		14 -> "**.${d.substring(2, 5)}.${d.substring(5, 8)}/****-**"
+		else -> "***"
+	}
+
+	private fun loadWorkOrderForCustomer(documentDigits: String, trackingCode: String): WorkOrder {
+		val doc = TaxDocument.parse(documentDigits)
+		val wo = workOrders.findByTrackingCode(trackingCode.trim())
+			.orElseThrow { NotFoundException("Work order not found") }
+		val customer = customers.findById(wo.customerId).orElseThrow { NotFoundException("Customer not found") }
+		if (customer.fiscalDocument.digits != doc.digits) {
+			throw BusinessRuleException("Document does not match this work order")
+		}
+		return wo
+	}
+
+	@Transactional
+	fun approveCustomerQuote(customerTaxIdDigits: String, trackingCode: String): WorkOrderTrackingResponse {
+		val wo = loadWorkOrderForCustomer(customerTaxIdDigits, trackingCode)
+		wo.approveCustomerQuote(now())
+		workOrders.save(wo)
+		return track(customerTaxIdDigits, trackingCode)
+	}
+
+	@Transactional
+	fun rejectCustomerQuote(customerTaxIdDigits: String, trackingCode: String): WorkOrderTrackingResponse {
+		val wo = loadWorkOrderForCustomer(customerTaxIdDigits, trackingCode)
+		cancelReservationsIfAny(wo.id)
+		wo.rejectCustomerQuote(now())
+		workOrders.save(wo)
+		return track(customerTaxIdDigits, trackingCode)
+	}
+
+	@Transactional
+	fun startDiagnosis(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.startDiagnosis(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	/** Técnico: submete plano e cria reservas de peças. */
+	@Transactional
+	fun submitPlanForInternalApproval(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.submitPlanForInternalApproval(now())
+		validateAndReplaceReservations(wo)
+		return workOrders.save(wo).toDto()
+	}
+
+	/** Administrador: reprova plano interno. */
+	@Transactional
+	fun rejectInternal(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		cancelReservationsIfAny(wo.id)
+		wo.rejectInternal(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	/** Administrador: aprova execução interna. */
+	@Transactional
+	fun approveInternal(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.approveInternal(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	/** Atendente: envia orçamento ao cliente. */
+	@Transactional
+	fun sendQuoteToCustomer(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.sendQuoteToCustomer(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	@Transactional
+	fun returnToDiagnosis(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		cancelReservationsIfAny(wo.id)
+		wo.returnToDiagnosis(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	@Transactional
+	fun completeServices(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		val pending = reservations.findPendingByWorkOrder(wo.id)
+		if (pending.isNotEmpty()) {
+			throw IllegalStateException(
+				"Existem reservas de peças pendentes de confirmação de saída pelo almoxarife",
+			)
+		}
+		wo.completeServices(now())
+		return workOrders.save(wo).toDto()
+	}
+
+	@Transactional
+	fun registerDelivery(id: UUID): WorkOrderResponse {
+		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
+		wo.registerDelivery(now())
+		return workOrders.save(wo).toDto()
+	}
+}
