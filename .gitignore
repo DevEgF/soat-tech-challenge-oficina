@@ -1,5 +1,4 @@
 # Local environment files (do not commit secrets)
-.env
 .claude
 .env.local
 .env.*.local
