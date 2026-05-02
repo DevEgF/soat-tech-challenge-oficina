@@ -9,7 +9,5 @@
 oficina/docs/security-scans/oficina-fat.jar
 oficina/docs/security-scans/*.tmp
 
-docker-compose.yml
-Dockerfile
 docs/frontend-permissoes-acesso.md
 oficina/gradlew
