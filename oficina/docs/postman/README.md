@@ -17,12 +17,15 @@ Coleção Postman cobrindo toda a API do MVP (Auth, CRUDs administrativos, fluxo
 
 | Login | Senha | Scope |
 |---|---|---|
+| `master` | `master` | `SCOPE_MASTER`, `SCOPE_ADMIN`, `SCOPE_ATTENDANT`, `SCOPE_TECHNICIAN`, `SCOPE_WAREHOUSE` |
 | `admin` | `admin` | `SCOPE_ADMIN` |
 | `atendente` | `atendente` | `SCOPE_ATTENDANT` |
 | `tecnico` | `tecnico` | `SCOPE_TECHNICIAN` |
 | `almoxarife` | `almoxarife` | `SCOPE_WAREHOUSE` |
 
-A senha do `admin` pode ser sobrescrita via `app.security.admin.password` (env var no `docker-compose.yml`).
+O `master` é o atalho para testar tudo com um login só (tem todos os scopes).
+
+A senha do `admin` pode ser sobrescrita via `app.security.admin.password` (env var no `docker-compose.yml` — por padrão o `.env` do projeto define `change-me-in-local-env`; se você subir via Docker com esse `.env`, ajuste `adminPassword` no environment do Postman para o mesmo valor).
 
 ## Como usar
 

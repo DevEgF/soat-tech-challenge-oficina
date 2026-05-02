@@ -10,7 +10,9 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
     { "key": "adminUsername", "value": "admin", "type": "string" },
-    { "key": "adminPassword", "value": "change-me-in-local-env", "type": "string" },
+    { "key": "adminPassword", "value": "admin", "type": "string" },
+    { "key": "masterUsername", "value": "master", "type": "string" },
+    { "key": "masterPassword", "value": "master", "type": "string" },
     { "key": "attendantUsername", "value": "atendente", "type": "string" },
     { "key": "attendantPassword", "value": "atendente", "type": "string" },
     { "key": "technicianUsername", "value": "tecnico", "type": "string" },
@@ -18,6 +20,7 @@
     { "key": "warehouseUsername", "value": "almoxarife", "type": "string" },
     { "key": "warehousePassword", "value": "almoxarife", "type": "string" },
     { "key": "adminToken", "value": "", "type": "string" },
+    { "key": "masterToken", "value": "", "type": "string" },
     { "key": "attendantToken", "value": "", "type": "string" },
     { "key": "technicianToken", "value": "", "type": "string" },
     { "key": "warehouseToken", "value": "", "type": "string" },
@@ -34,8 +37,34 @@
   "item": [
     {
       "name": "Auth",
-      "description": "Login para cada papel. O token é gravado automaticamente em variáveis da coleção (`adminToken`, `attendantToken`, `technicianToken`, `warehouseToken`).",
+      "description": "Login para cada papel. O token é gravado automaticamente em variáveis da coleção (`adminToken`, `masterToken`, `attendantToken`, `technicianToken`, `warehouseToken`). O usuário `master` possui todos os scopes (ADMIN/ATTENDANT/TECHNICIAN/WAREHOUSE).",
       "item": [
+        {
+          "name": "Login master",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{masterUsername}}\",\n  \"password\": \"{{masterPassword}}\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/public/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "public", "auth", "login"] }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('masterToken', json.accessToken);",
+                  "pm.test('accessToken presente', () => pm.expect(json.accessToken).to.be.a('string').and.not.empty);"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Login admin",
           "request": {
