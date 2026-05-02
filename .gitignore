@@ -1,0 +1,15 @@
+# Local environment files (do not commit secrets)
+.env
+.claude
+.env.local
+.env.*.local
+!.env.example
+
+# Vulnerability scan artifacts that are too big or runtime-only
+oficina/docs/security-scans/oficina-fat.jar
+oficina/docs/security-scans/*.tmp
+
+docker-compose.yml
+Dockerfile
+docs/frontend-permissoes-acesso.md
+oficina/gradlew

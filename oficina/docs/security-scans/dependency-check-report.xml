@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<analysis xmlns="https://jeremylong.github.io/DependencyCheck/dependency-check.4.1.xsd"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="https://jeremylong.github.io/DependencyCheck/dependency-check.4.1.xsd
+                              https://dependency-check.github.io/DependencyCheck/dependency-check.4.1.xsd">
+    <scanInfo>
+        <engineVersion>12.2.1</engineVersion>
+        <dataSource>
+            <name>NVD API Last Checked</name>
+            <timestamp>2026-04-28T00:28:42Z</timestamp>
+        </dataSource>
+        <dataSource>
+            <name>NVD API Last Modified</name>
+            <timestamp>2026-04-28T00:19:54Z</timestamp>
+        </dataSource>
+    </scanInfo>
+    <projectInfo>
+        <name>oficina</name>
+        <reportDate>2026-04-28T00:28:48.457622242Z</reportDate>
+        <credits>This product uses the NVD API but is not endorsed or certified by the NVD. This report contains data retrieved from the National Vulnerability Database: https://nvd.nist.gov, Github Advisory Database (via NPM Audit API): https://github.com/advisories/, and the RetireJS community.</credits>
+    </projectInfo>
+    <dependencies>
+        <dependency isVirtual="false">
+            <fileName>gradle-wrapper.jar</fileName>
+            <filePath>/src/gradle/wrapper/gradle-wrapper.jar</filePath>
+            <md5>41a92bc05484c1c6b4455b95e5527327</md5>
+            <sha1>5fb21a795db76a01b4ab4acb25132f8beee3138d</sha1>
+            <sha256>55243ef57851f12b070ad14f7f5bb8302daceeebc5bce5ece5fa6edb23e1145c</sha256>
+            <license>Apache-2.0</license>
+            <evidenceCollected>
+                <evidence type="vendor" confidence="HIGH">
+                    <source>file</source>
+                    <name>name</name>
+                    <value>gradle-wrapper</value>
+                </evidence>
+                <evidence type="vendor" confidence="LOW">
+                    <source>jar</source>
+                    <name>package name</name>
+                    <value>gradle</value>
+                </evidence>
+                <evidence type="vendor" confidence="LOW">
+                    <source>Manifest</source>
+                    <name>enable-native-access</name>
+                    <value>ALL-UNNAMED</value>
+                </evidence>
+                <evidence type="product" confidence="HIGH">
+                    <source>file</source>
+                    <name>name</name>
+                    <value>gradle-wrapper</value>
+                </evidence>
+                <evidence type="product" confidence="HIGHEST">
+                    <source>jar</source>
+                    <name>package name</name>
+                    <value>gradle</value>
+                </evidence>
+                <evidence type="product" confidence="HIGHEST">
+                    <source>jar</source>
+                    <name>package name</name>
+                    <value>wrapper</value>
+                </evidence>
+                <evidence type="product" confidence="LOW">
+                    <source>Manifest</source>
+                    <name>enable-native-access</name>
+                    <value>ALL-UNNAMED</value>
+                </evidence>
+                <evidence type="product" confidence="HIGH">
+                    <source>Manifest</source>
+                    <name>Implementation-Title</name>
+                    <value>Gradle Wrapper</value>
+                </evidence>
+            </evidenceCollected>
+        </dependency>
+    </dependencies>
+</analysis>

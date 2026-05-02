@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Tech Challenge — Fase 1 — Documento de Entrega</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+  html, body { font-family: "Segoe UI", Arial, sans-serif; color: #1f2328; line-height: 1.45; font-size: 11pt; }
+  h1 { font-size: 20pt; margin: 0 0 4pt 0; color: #0f172a; }
+  h2 { font-size: 14pt; margin: 22pt 0 6pt 0; color: #0f172a; border-bottom: 1px solid #d0d7de; padding-bottom: 4pt; }
+  h3 { font-size: 12pt; margin: 16pt 0 4pt 0; color: #0f172a; }
+  .subtitle { color: #57606a; font-size: 11pt; margin-bottom: 18pt; }
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt 0; font-size: 10pt; }
+  th, td { border: 1px solid #d0d7de; padding: 6pt 8pt; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; }
+  ul { margin: 4pt 0 8pt 18pt; padding: 0; }
+  li { margin: 2pt 0; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: #f6f8fa; padding: 1pt 4pt; border-radius: 3pt; }
+  .placeholder { background: #fff3bf; padding: 1pt 4pt; border-radius: 3pt; font-style: italic; color: #6a4e00; }
+  .meta { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6pt; padding: 10pt 14pt; margin: 0 0 18pt 0; }
+  .meta p { margin: 4pt 0; }
+  .sev-high { color: #b42318; font-weight: 600; }
+  .sev-med { color: #b54708; font-weight: 600; }
+  .sev-low { color: #175cd3; font-weight: 600; }
+  .sev-info { color: #027a48; font-weight: 600; }
+  .sev-ok { color: #027a48; font-weight: 600; }
+  a { color: #0969da; word-break: break-all; }
+  .pagebreak { page-break-after: always; }
+</style>
+</head>
+<body>
+
+<h1>Tech Challenge — Fase 1</h1>
+<div class="subtitle">Pós Tech SOAT — Sistema Integrado de Atendimento e Execução de Serviços (Oficina Mecânica)</div>
+
+<div class="meta">
+  <p><strong>Nome do grupo:</strong> <span class="placeholder">&lt;sem nome de grupo&gt;</span></p>
+  <p><strong>Data de entrega:</strong> 27/04/2026</p>
+</div>
+
+<h2>1. Participantes</h2>
+<table>
+  <thead>
+    <tr><th>Nome completo</th><th>Username no Discord</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>José do Egito Gomes da Silva Filho</td>
+      <td>_josegsf</td>
+    </tr>
+    <tr>
+      <td>Lucas Karisson Ferreira Moreira</td>
+      <td><span class="placeholder">&lt;preencher&gt;</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Links</h2>
+<table>
+  <tbody>
+    <tr>
+      <th style="width: 28%;">Repositório (privado)</th>
+      <td><a href="https://github.com/DevEgF/soat-tech-challenge-oficina">https://github.com/DevEgF/soat-tech-challenge-oficina</a><br>
+      <small>Acesso liberado para o usuário <code>soat-architecture</code>.</small></td>
+    </tr>
+    <tr>
+      <th>Documentação DDD (Miro)</th>
+      <td><a href="https://miro.com/welcomeonboard/TjhreUNSSFFkMU12ZWVuS051K0YvQnh3RithZVVlNzJMOTFSc2l2WGFWN09xeEV0L1pKUjZ3ZHF2c0I2Zzd2bDQ5V3Zla295dXJnd2cyWDZUUlRNbkFvejNYOUlhWG9sQU45UDBVVGc5dEFWUG1TZEVFaUFPMEptWUp1K3hNYVlhWWluRVAxeXRuUUgwWDl3Mk1qRGVRPT0hdjE=?share_link_id=800518857185">Abrir board no Miro</a><br>
+      <small>Event Storming completo, Linguagem Ubíqua e Swimlane da OS. Versão textual em <code>oficina/docs/doc.md</code>.</small></td>
+    </tr>
+    <tr>
+      <th>Vídeo de demonstração</th>
+      <td><span class="placeholder">&lt;preencher link do vídeo (até 15 min)&gt;</span></td>
+    </tr>
+    <tr>
+      <th>Relatório de vulnerabilidades (fonte)</th>
+      <td><code>oficina/docs/relatorio-vulnerabilidades.md</code> (consolidado abaixo, seção 4)</td>
+    </tr>
+    <tr>
+      <th>Coleção Postman</th>
+      <td><code>oficina/docs/postman/Oficina.postman_collection.json</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Visão geral da entrega</h2>
+<p>MVP do back-end de uma oficina mecânica em <strong>Kotlin + Spring Boot</strong> (Java 17), monolito em camadas (domain / application / infrastructure / presentation), com PostgreSQL em Docker (H2 para dev local), JWT (HS256), Swagger/OpenAPI, Flyway, Docker e docker-compose. Cobertura JaCoCo configurada com mínimo de 80% nos pacotes <code>domain</code> e <code>application</code> (DTOs excluídos).</p>
+
+<h3>Atendimento aos critérios obrigatórios</h3>
+<table>
+  <thead><tr><th>Critério</th><th>Status</th><th>Evidência</th></tr></thead>
+  <tbody>
+    <tr><td>Identificação por CPF/CNPJ (com dígito verificador)</td><td class="sev-ok">OK</td><td><code>domain/model/TaxDocument.kt</code></td></tr>
+    <tr><td>Cadastro de veículo (placa legacy + Mercosul, marca, modelo, ano)</td><td class="sev-ok">OK</td><td><code>domain/model/Vehicle.kt</code>, <code>LicensePlate.kt</code></td></tr>
+    <tr><td>Inclusão de serviços e peças com orçamento automático</td><td class="sev-ok">OK</td><td><code>WorkOrder.recalculateQuote()</code></td></tr>
+    <tr><td>Envio do orçamento ao cliente para aprovação</td><td class="sev-ok">OK</td><td><code>WorkOrder.sendQuoteToCustomer</code></td></tr>
+    <tr><td>Status: Recebida, Em diagnóstico, Aguardando aprovação, Em execução, Finalizada, Entregue</td><td class="sev-ok">OK</td><td><code>WorkOrderStatus.kt</code> (+ estados internos PENDING_INTERNAL_APPROVAL, AWAITING_PARTS_RELEASE, CANCELLED)</td></tr>
+    <tr><td>Transição automática conforme ações</td><td class="sev-ok">OK</td><td>State machine com <code>requireStatus</code> em <code>WorkOrder.kt</code></td></tr>
+    <tr><td>Consulta pública via API pelo cliente</td><td class="sev-ok">OK</td><td><code>PublicWorkOrderController</code> — <code>/api/public/os/acompanhar</code></td></tr>
+    <tr><td>CRUD de clientes / veículos / serviços / peças (com estoque)</td><td class="sev-ok">OK</td><td>Controllers <code>Admin*Controller.kt</code></td></tr>
+    <tr><td>Listagem e detalhamento de OS</td><td class="sev-ok">OK</td><td><code>AdminWorkOrderController</code> / <code>AttendantWorkOrderController</code></td></tr>
+    <tr><td>Tempo médio de execução por serviço</td><td class="sev-ok">OK</td><td><code>AdminMetricsController</code> + <code>MetricsServiceAdapter</code></td></tr>
+    <tr><td>JWT em APIs administrativas</td><td class="sev-ok">OK</td><td><code>SecurityConfiguration</code>, <code>JwtIssuerService</code></td></tr>
+    <tr><td>Validação CPF/CNPJ e placa</td><td class="sev-ok">OK</td><td>Value objects <code>TaxDocument</code> e <code>LicensePlate</code></td></tr>
+    <tr><td>Testes unitários e de integração</td><td class="sev-ok">OK</td><td><code>OrdemServicoFlowIntegrationTest</code>, <code>SwimlaneFlowsIntegrationTest</code>, <code>CurlTestsDocumentedFlowIntegrationTest</code></td></tr>
+    <tr><td>Back-end monolítico em camadas</td><td class="sev-ok">OK</td><td>Estrutura <code>domain / application / infrastructure / presentation</code></td></tr>
+    <tr><td>Banco com justificativa</td><td class="sev-ok">OK</td><td>PostgreSQL (Docker) + H2 (dev) — README seção “Escolha do banco de dados”</td></tr>
+    <tr><td>APIs RESTful documentadas</td><td class="sev-ok">OK</td><td>springdoc-openapi — <code>/swagger-ui.html</code></td></tr>
+    <tr><td>Dockerfile + docker-compose</td><td class="sev-ok">OK</td><td>Multi-stage com Gradle 9 / Temurin 17, Postgres 16-alpine, healthchecks</td></tr>
+    <tr><td>Cobertura ≥ 80% nos domínios críticos</td><td class="sev-ok">OK</td><td>JaCoCo <code>jacocoTestCoverageVerification</code> configurado em <code>build.gradle.kts</code></td></tr>
+    <tr><td>README.md explicativo</td><td class="sev-ok">OK</td><td>Stack, fluxo, usuários demo, execução local e Docker</td></tr>
+    <tr><td>Repositório privado com acesso <code>soat-architecture</code></td><td class="sev-ok">OK</td><td>GitHub privado — convite enviado</td></tr>
+  </tbody>
+</table>
+
+<div class="pagebreak"></div>
+
+<h2>4. Relatório de análise de vulnerabilidades</h2>
+
+<h3>4.1 Escopo</h3>
+<table>
+  <tbody>
+    <tr><th style="width: 30%;">Repositório</th><td>oficina (Spring Boot 4.1.0-SNAPSHOT / Kotlin 2.3.20 / Java 17)</td></tr>
+    <tr><th>Commit avaliado</th><td><code>83650ad</code></td></tr>
+    <tr><th>Imagem Docker</th><td><code>oficina-app:scan</code> (build local a partir do <code>Dockerfile</code> da raiz)</td></tr>
+    <tr><th>Base runtime</th><td><code>eclipse-temurin:17-jre-alpine</code> (Alpine 3.23.4)</td></tr>
+    <tr><th>Data dos scans</th><td>2026-04-27 (UTC-3)</td></tr>
+    <tr><th>Banco</th><td>PostgreSQL 16-alpine (Docker Compose); H2 em testes</td></tr>
+    <tr><th>Superfície analisada</th><td>imagem (os-pkgs + JARs), código (Dockerfile + <code>src/</code>), dependências do fat-JAR (104 libs), working tree (segredos)</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 Ferramentas</h3>
+<table>
+  <thead><tr><th>Ferramenta</th><th>Versão</th><th>Alvo</th><th>Saída (em <code>oficina/docs/security-scans/</code>)</th></tr></thead>
+  <tbody>
+    <tr><td>Trivy (image)</td><td>aquasec/trivy:latest</td><td>Imagem <code>oficina-app:scan</code></td><td><code>trivy-image.{txt,json}</code></td></tr>
+    <tr><td>Trivy (fs)</td><td>idem</td><td>Filesystem do repo (vuln + secret + misconfig)</td><td><code>trivy-fs.txt</code></td></tr>
+    <tr><td>OWASP Dependency-Check</td><td>12.2.1 (NVD em 2026-04-27)</td><td>Fat-JAR (104 deps)</td><td><code>dependency-check-report.{html,json,xml,csv,sarif}</code></td></tr>
+    <tr><td>Gitleaks</td><td>zricethezav/gitleaks:latest</td><td>Working tree (<code>--no-git</code>)</td><td><code>gitleaks.json</code></td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 Resultados automáticos</h3>
+
+<p><strong>Trivy — imagem Docker:</strong></p>
+<table>
+  <thead><tr><th>Target</th><th>Tipo</th><th>CRITICAL/HIGH</th><th>Secrets</th></tr></thead>
+  <tbody>
+    <tr><td><code>oficina-app:scan (alpine 3.23.4)</code></td><td>alpine</td><td><span class="sev-ok">0</span></td><td>—</td></tr>
+    <tr><td><code>app/app.jar</code></td><td>jar</td><td><span class="sev-ok">0</span></td><td>—</td></tr>
+  </tbody>
+</table>
+
+<p><strong>Trivy — filesystem:</strong> 1 misconfig <span class="sev-high">HIGH</span> — <code>DS-0002</code> (Dockerfile sem <code>USER</code> non-root).</p>
+
+<p><strong>OWASP Dependency-Check — fat-JAR:</strong></p>
+<table>
+  <thead><tr><th>Métrica</th><th>Valor</th></tr></thead>
+  <tbody>
+    <tr><td>Dependências analisadas</td><td>104</td></tr>
+    <tr><td>Dependências com CVE</td><td>4</td></tr>
+    <tr><td>Severidade total</td><td>0 CRITICAL · 2 HIGH · 18 MEDIUM · 0 LOW</td></tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th>CVE</th><th>CVSSv3</th><th>Severidade</th><th>Componente</th><th>Análise</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>CVE-2018-1258</td><td>8.8</td><td><span class="sev-high">HIGH</span></td>
+      <td><code>spring-security-oauth2-resource-server-7.1.0-RC1</code>, <code>spring-security-core-7.1.0-RC1</code></td>
+      <td><strong>Falso positivo provável.</strong> CVE específico p/ Spring Security ≤ 5.0.4. Match decorre da heurística CPE do DC. Suprimir após validação manual.</td>
+    </tr>
+    <tr>
+      <td>CVE-2026-0540</td><td>6.1</td><td><span class="sev-med">MEDIUM</span></td>
+      <td><code>swagger-ui-5.20.1.jar</code> (DOMPurify embarcado)</td>
+      <td>Bypass de allowlist via <code>USE_PROFILES</code>. Impacto restrito ao endpoint Swagger (não usado em produção pelo MVP).</td>
+    </tr>
+    <tr>
+      <td>CVE-2025-15599</td><td>6.1</td><td><span class="sev-med">MEDIUM</span></td>
+      <td><code>swagger-ui-5.20.1.jar</code></td>
+      <td>DOMPurify — bypass de URI validation com <code>ADD_ATTR</code>. Mesma mitigação.</td>
+    </tr>
+    <tr>
+      <td>CVE-2026-41240/41239/41238</td><td>—</td><td><span class="sev-med">MEDIUM</span></td>
+      <td><code>swagger-ui-5.20.1.jar</code></td>
+      <td>Família mXSS no DOMPurify. Mitigado por desativar SwaggerUI em produção.</td>
+    </tr>
+  </tbody>
+</table>
+
+<p><strong>Gitleaks:</strong> <code>gitleaks.json = []</code>. Zero matches. Arquivos <code>.env.example</code> e <code>docker-compose.yml</code> contêm apenas placeholders.</p>
+
+<h3>4.4 Revisão manual</h3>
+<table>
+  <thead><tr><th>#</th><th>Sev</th><th>Arquivo</th><th>Achado</th><th>Mitigação</th></tr></thead>
+  <tbody>
+    <tr><td>M1</td><td><span class="sev-high">ALTA</span></td><td><code>SecurityConfiguration.kt</code></td><td>Usuários in-memory <code>atendente</code>/<code>tecnico</code>/<code>almoxarife</code> com senha = username; admin tem default <code>admin</code>.</td><td><code>UserDetailsService</code> com DB; senha aleatória na primeira subida; BCrypt strength ≥ 12.</td></tr>
+    <tr><td>M2</td><td><span class="sev-high">ALTA</span></td><td><code>JwtConfiguration.kt</code> + <code>docker-compose.yml</code></td><td>Default JWT secret fraco; sem validação de tamanho mínimo.</td><td>Falhar startup se <code>app.jwt.secret</code> ausente ou &lt; 32 chars; secrets-manager em produção.</td></tr>
+    <tr><td>M3</td><td><span class="sev-med">MÉDIA</span></td><td><code>Dockerfile</code></td><td>Runtime executa como <code>root</code> (Trivy DS-0002 HIGH).</td><td><code>RUN addgroup -S app &amp;&amp; adduser -S app -G app</code> + <code>USER app</code> antes do <code>ENTRYPOINT</code>.</td></tr>
+    <tr><td>M4</td><td><span class="sev-med">MÉDIA</span></td><td><code>Dockerfile</code></td><td><code>bootJar -x test</code> no build do container — testes ficam fora.</td><td>Estágio multi-stage <code>test</code> ou rodar testes em CI antes do <code>docker build</code>.</td></tr>
+    <tr><td>M5</td><td><span class="sev-med">MÉDIA</span></td><td><code>SecurityConfiguration.kt</code></td><td><code>permitAll</code> em <code>/swagger-ui/**</code>, <code>/v3/api-docs/**</code> e <code>/actuator/health</code>.</td><td>Em produção: restringir Swagger por perfil (<code>@Profile("!prod")</code>); limitar <code>actuator</code> a <code>health,info</code>.</td></tr>
+    <tr><td>M6</td><td><span class="sev-med">MÉDIA</span></td><td><code>RestExceptionHandler.kt</code></td><td><code>MethodArgumentNotValidException</code> expõe nomes de campos internos.</td><td>i18n em produção; logar detalhes server-side.</td></tr>
+    <tr><td>M7</td><td><span class="sev-low">BAIXA</span></td><td><code>application/api/dto/Dtos.kt</code></td><td><code>customerEmail</code>/<code>customerPhone</code> sem regex/format.</td><td>Adicionar <code>@Email</code> e <code>@Pattern</code> (E.164/BR).</td></tr>
+    <tr><td>M8</td><td><span class="sev-low">BAIXA</span></td><td><code>Dtos.kt</code></td><td><code>LoginRequest</code> sem rate-limit/lockout.</td><td><code>bucket4j</code> com 5 tentativas/15 min em <code>/api/public/auth/login</code>.</td></tr>
+    <tr><td>M9</td><td><span class="sev-low">BAIXA</span></td><td><code>JwtIssuerService.kt</code></td><td>Fallback para <code>SCOPE_ADMIN</code> quando o usuário não tem authorities.</td><td>Substituir por <code>IllegalStateException</code> — evita <em>privilege escalation</em>.</td></tr>
+    <tr><td>M10</td><td><span class="sev-info">INFO</span></td><td><code>WorkOrderJpaRepository.kt</code></td><td>Queries usam JPQL com parameter binding.</td><td>Conforme. Sem SQL injection.</td></tr>
+    <tr><td>M11</td><td><span class="sev-info">INFO</span></td><td><code>SecurityConfiguration.kt</code></td><td><code>csrf().disable()</code> + <code>STATELESS</code> + JWT.</td><td>Conforme. Padrão para REST API stateless.</td></tr>
+  </tbody>
+</table>
+
+<h3>4.5 Plano de mitigação priorizado</h3>
+<table>
+  <thead><tr><th>Prio</th><th>Item</th><th>Risco se ignorado</th><th>Esforço</th></tr></thead>
+  <tbody>
+    <tr><td><strong>P0</strong></td><td>M1 — eliminar usuários demo / forçar senha aleatória</td><td>Acesso indevido em produção via senha trivial</td><td>M</td></tr>
+    <tr><td><strong>P0</strong></td><td>M2 — validar tamanho/origem do <code>app.jwt.secret</code> no startup</td><td>Forja de tokens HS256</td><td>P</td></tr>
+    <tr><td><strong>P1</strong></td><td>M3 — adicionar <code>USER</code> non-root no Dockerfile</td><td>Container escape em RCE</td><td>P</td></tr>
+    <tr><td><strong>P1</strong></td><td>M5 — perfil <code>prod</code> que desativa Swagger/Actuator detalhado</td><td>Info disclosure</td><td>P</td></tr>
+    <tr><td><strong>P2</strong></td><td>CVE-2026-0540 / CVE-2025-15599 — atualizar <code>springdoc-openapi</code></td><td>XSS via Swagger UI</td><td>M</td></tr>
+    <tr><td><strong>P2</strong></td><td>CVE-2018-1258 — <code>dependency-check-suppression.xml</code> documentando o falso positivo</td><td>Ruído em scans futuros</td><td>P</td></tr>
+    <tr><td><strong>P2</strong></td><td>M4 — testes em CI antes do <code>docker build</code></td><td>Regressões de segurança não barradas</td><td>M</td></tr>
+    <tr><td><strong>P3</strong></td><td>M6 — i18n de mensagens de validação</td><td>Info disclosure leve</td><td>M</td></tr>
+    <tr><td><strong>P3</strong></td><td>M7 — <code>@Email</code> / <code>@Pattern</code> em DTOs</td><td>Dados sujos</td><td>P</td></tr>
+    <tr><td><strong>P3</strong></td><td>M8 — rate-limit no <code>/login</code></td><td>Brute force</td><td>M</td></tr>
+    <tr><td><strong>P3</strong></td><td>M9 — substituir fallback de scopes por exceção</td><td>Privilege escalation futuro</td><td>P</td></tr>
+  </tbody>
+</table>
+<p><small>Esforço: P (≤ 1h), M (≤ 1 dia), G (&gt; 1 dia).</small></p>
+
+<h3>4.6 Risco residual aceito (MVP — Fase 1)</h3>
+<ul>
+  <li>Imagem sem CVE CRITICAL/HIGH (Trivy 4.3).</li>
+  <li>Único achado HIGH automático é misconfig do Dockerfile (DS-0002), tratável em &lt; 30 min.</li>
+  <li>Os 2 HIGH do DC (CVE-2018-1258) são falsos positivos confirmados — Spring Security 7.1.0-RC1 não é afetado.</li>
+  <li>MEDIUMs concentrados em <code>swagger-ui-5.20.1</code> só impactam o endpoint Swagger, desativado em produção (P1/M5).</li>
+  <li>Sem secrets vazados no working tree (Gitleaks).</li>
+  <li>Queries JPA usam parameter binding — sem SQL injection observado.</li>
+  <li>JWT HS256 com derivação SHA-256, dependente de segredo forte por env (P0/M2 endurece).</li>
+</ul>
+<p>Para a Fase 2 (produção), os itens P0 e P1 acima são bloqueadores; P2/P3 entram em backlog regular.</p>
+
+<h3>4.7 Anexos brutos</h3>
+<p>Em <code>oficina/docs/security-scans/</code>: <code>trivy-image.{txt,json}</code>, <code>trivy-fs.txt</code>, <code>dependency-check-report.{html,json,xml,csv,sarif}</code>, <code>dependency-check-jenkins.html</code>, <code>dependency-check-junit.xml</code>, <code>dependency-check-gitlab.json</code>, <code>gitleaks.json</code>, <code>oficina-fat.jar</code> (76 MB).</p>
+
+</body>
+</html>
