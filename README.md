@@ -2,12 +2,22 @@
 
 Monólito **Kotlin** com **Spring Boot** (JPA, Flyway, Spring Security OAuth2 Resource Server + JWT emitido pela aplicação), organizado em **arquitetura em camadas** alinhada ao Tech Challenge SOAT (MVP oficina mecânica).
 
+## Documentação de Arquitetura
+
+A documentação C4 completa (System Context, Container, Component, ER diagram e fluxos de negócio) está em [`oficina/docs/c4/`](oficina/docs/c4/) — veja o **[índice completo](oficina/docs/c4/INDEX.md)** para navegar por todos os diagramas e roteiros de leitura.
+
 ## Stack
 
+**Backend** (`oficina/`)
 - Kotlin 2.3, Java 17, Gradle
-- Spring Boot (web, data-jpa, validation, flyway, security, oauth2-resource-server, actuator)
+- Spring Boot 4.1.0 (web, data-jpa, validation, flyway, security, oauth2-resource-server, actuator)
 - OpenAPI / Swagger UI (springdoc)
-- Banco de dados: **PostgreSQL** + **Flyway** (`validate` + scripts em `oficina/src/main/resources/db/migration`)
+- Banco de dados: **PostgreSQL** + **Flyway** (migrations V1–V5 em `oficina/src/main/resources/db/migration`)
+- Email: integração com **Resend** (opcional; configurada via `APP_RESEND_API_KEY`)
+
+**Frontend** (`frontend/`)
+- Vite + TypeScript (React)
+- Aplicação de acompanhamento de OS pelo cliente
 
 ## Linguagem ubíqua (resumo)
 
@@ -102,6 +112,10 @@ SPRING_DATASOURCE_PASSWORD=change-me-in-local-env
 APP_JWT_SECRET=change-me-long-random-secret-for-hs256
 # Senha do login "admin" (Postman/demo); altere em produção.
 APP_SECURITY_ADMIN_PASSWORD=admin
+
+# Email via Resend (opcional; sem chave o envio é simplesmente ignorado)
+APP_RESEND_API_KEY=
+APP_RESEND_FROM_EMAIL=noreply@oficinasys.local
 ```
 
 ```bash
@@ -124,7 +138,7 @@ cd oficina
 
 ## Relatório de vulnerabilidades
 
-Modelo e instruções de scan: [docs/relatorio-vulnerabilidades.md](oficina/docs/relatorio-vulnerabilidades.md). Inclua a saída das ferramentas no PDF de entrega da disciplina.
+Modelo e instruções de scan: [docs/security-scans/](oficina/docs/security-scans/). Inclua a saída das ferramentas no PDF de entrega da disciplina.
 
 ## Entrega (checklist institucional)
 
