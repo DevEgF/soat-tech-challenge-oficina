@@ -176,6 +176,44 @@ class SwimlaneFlowsIntegrationTest {
 	}
 
 	@Test
+	@DisplayName("Fluxo: decisão de orçamento via endpoint JSON (aprovação) e idempotência")
+	fun testBudgetDecisionEndpointApprove() {
+		val s = suffix()
+		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-BD-A-$s")
+		val (_, codigo) = advanceToAguardandoCustomer(servicoId, pecaId, uniquePlate())
+		mockMvc.perform(
+			post("/api/public/os/orcamento/decisao")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""{"documento":"52998224725","codigo":"$codigo","decisao":"APROVADO"}"""),
+		)
+			.andExpect(status().isOk)
+			.andExpect(jsonPath("$.status").value("AWAITING_PARTS_RELEASE"))
+		// reenvio da mesma decisão deve ser idempotente (não quebrar o fluxo)
+		mockMvc.perform(
+			post("/api/public/os/orcamento/decisao")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""{"documento":"52998224725","codigo":"$codigo","decisao":"APROVADO"}"""),
+		)
+			.andExpect(status().isOk)
+			.andExpect(jsonPath("$.status").value("AWAITING_PARTS_RELEASE"))
+	}
+
+	@Test
+	@DisplayName("Fluxo: decisão de orçamento via endpoint JSON (recusa)")
+	fun testBudgetDecisionEndpointReject() {
+		val s = suffix()
+		val (servicoId, pecaId) = seedCatalog(10, 5, "PEC-BD-R-$s")
+		val (_, codigo) = advanceToAguardandoCustomer(servicoId, pecaId, uniquePlate())
+		mockMvc.perform(
+			post("/api/public/os/orcamento/decisao")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content("""{"documento":"52998224725","codigo":"$codigo","decisao":"RECUSADO"}"""),
+		)
+			.andExpect(status().isOk)
+			.andExpect(jsonPath("$.status").value("CANCELLED"))
+	}
+
+	@Test
 	@DisplayName("Fluxo: atendente volta orçamento ao diagnóstico")
 	fun testReturnToDiagnosis() {
 		val s = suffix()

@@ -96,5 +96,6 @@ fun WorkOrderEntity.toDomain(): WorkOrder {
 		deliveredAt = deliveredAt,
 		cancelledAt = cancelledAt,
 		returnedToDiagnosisAt = returnedToDiagnosisAt,
+		createdAt = createdAt,
 	)
 }

@@ -56,6 +56,8 @@ data class WorkOrder(
 	var cancelledAt: Instant? = null,
 	/** Attendant reverted OS from PENDING_APPROVAL back to IN_DIAGNOSIS. */
 	var returnedToDiagnosisAt: Instant? = null,
+	/** Creation timestamp used for FIFO ordering in the work order listing. */
+	var createdAt: Instant = Instant.now(),
 ) {
 
 	fun recalculateQuote() {

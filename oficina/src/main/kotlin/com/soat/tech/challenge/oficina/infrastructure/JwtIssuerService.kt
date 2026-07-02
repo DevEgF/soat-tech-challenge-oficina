@@ -5,6 +5,8 @@ import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.MACSigner
 import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
+import com.soat.tech.challenge.oficina.domain.port.IssuedToken
+import com.soat.tech.challenge.oficina.domain.port.TokenIssuerPort
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.stereotype.Service
@@ -18,9 +20,9 @@ class JwtIssuerService(
 	private val jwtSigningKey: SecretKey,
 	private val userDetailsService: UserDetailsService,
 	@Value("\${app.jwt.expiration-minutes:60}") private val expirationMinutes: Long,
-) {
+) : TokenIssuerPort {
 
-	fun issueForUser(username: String): Pair<String, Long> {
+	override fun issueForUser(username: String): IssuedToken {
 		val user = userDetailsService.loadUserByUsername(username)
 		val scopes = user.authorities.mapNotNull { a -> a.authority?.removePrefix("SCOPE_")?.takeIf { it.isNotEmpty() } }
 		val scopeClaim = if (scopes.isEmpty()) listOf("ADMIN") else scopes
@@ -38,6 +40,6 @@ class JwtIssuerService(
 		val signer = MACSigner(jwtSigningKey.encoded)
 		jwt.sign(signer)
 		val seconds = ChronoUnit.SECONDS.between(now, exp)
-		return Pair(jwt.serialize(), seconds)
+		return IssuedToken(jwt.serialize(), seconds)
 	}
 }

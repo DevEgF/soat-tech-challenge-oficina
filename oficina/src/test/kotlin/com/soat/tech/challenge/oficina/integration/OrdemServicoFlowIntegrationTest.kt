@@ -123,7 +123,7 @@ class WorkOrderFlowIntegrationTest {
 		mockMvc.perform(
 			post("/api/admin/ordens-servico/$osId/aprovar-interno")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN"))),
-		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("PENDING_INTERNAL_APPROVAL"))
+		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("PENDING_APPROVAL"))
 
 		mockMvc.perform(
 			post("/api/attendant/ordens-servico/$osId/enviar-orcamento-cliente")
@@ -162,12 +162,16 @@ class WorkOrderFlowIntegrationTest {
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ATTENDANT"))),
 		).andExpect(status().isOk).andExpect(jsonPath("$.status").value("DELIVERED"))
 
-		mockMvc.perform(
+		val metricasJson = mockMvc.perform(
 			get("/api/admin/metricas/tempo-medio-execucao-servicos")
 				.with(jwt().authorities(SimpleGrantedAuthority("SCOPE_ADMIN"))),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$[0].catalogServiceId").value(UUID.fromString(servicoId).toString()))
+			.andReturn().response.contentAsString
+		val metricas = objectMapper.readTree(metricasJson)
+		val temMetricaDoServico = metricas.elements().asSequence()
+			.any { it.path("catalogServiceId").asText() == UUID.fromString(servicoId).toString() }
+		kotlin.test.assertTrue(temMetricaDoServico, "esperado metrica para servicoId=$servicoId em $metricasJson")
 	}
 
 	@Test

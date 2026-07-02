@@ -1,0 +1,14 @@
+# Copie para terraform.tfvars e ajuste conforme necessário.
+
+cluster_name    = "oficina"
+node_image      = "kindest/node:v1.31.0"
+kubeconfig_path = "./oficina.kubeconfig"
+host_http_port  = 8080
+
+install_metrics_server = true
+
+# true (padrão): o `terraform apply` sobe o stack completo (banco + app + HPA).
+# Para dev local usa o k8s/11-secret.example.yaml; para uso real crie k8s/11-secret.yaml.
+# Deixe false para gerenciar os workloads só via `kubectl apply -f k8s/` (ou CI/CD).
+bootstrap_workloads = true
+manifests_path      = "../k8s"

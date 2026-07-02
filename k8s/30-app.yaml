@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oficina-app
+  namespace: oficina
+  labels:
+    app.kubernetes.io/name: oficina-app
+    app.kubernetes.io/part-of: oficina
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oficina-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oficina-app
+        app.kubernetes.io/part-of: oficina
+    spec:
+      # Só inicia a app depois que o Postgres aceita conexões.
+      initContainers:
+        - name: wait-for-db
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - "until pg_isready -h oficina-db -p 5432 -U oficina; do echo waiting for db; sleep 2; done"
+      containers:
+        - name: app
+          # Ajuste a tag para a versão publicada no GHCR (o CI/CD faz o push — Task 8).
+          image: ghcr.io/devegf/soat-tech-challenge-oficina:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: oficina-config
+          env:
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secret
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: APP_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secret
+                  key: APP_JWT_SECRET
+            - name: APP_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secret
+                  key: APP_SECURITY_ADMIN_PASSWORD
+            - name: APP_RESEND_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: oficina-secret
+                  key: APP_RESEND_API_KEY
+          # requests são OBRIGATÓRIOS para o HPA calcular utilização.
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "768Mi"
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            # Tolera o boot da JVM + Flyway (até ~150s).
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: oficina-app
+  namespace: oficina
+  labels:
+    app.kubernetes.io/part-of: oficina
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: oficina-app
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http

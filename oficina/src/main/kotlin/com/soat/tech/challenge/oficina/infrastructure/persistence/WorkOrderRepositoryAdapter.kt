@@ -38,6 +38,7 @@ class WorkOrderRepositoryAdapter(
 				servicesTotalCents = ordem.servicesTotalCents,
 				partsTotalCents = ordem.partsTotalCents,
 				totalCents = ordem.totalCents,
+				createdAt = ordem.createdAt,
 			)
 		}
 		e.customer = customer

@@ -24,6 +24,7 @@ import com.soat.tech.challenge.oficina.domain.port.PartRepository
 import com.soat.tech.challenge.oficina.domain.port.PartReservationRepository
 import com.soat.tech.challenge.oficina.domain.port.CatalogServiceRepository
 import com.soat.tech.challenge.oficina.domain.port.VehicleRepository
+import com.soat.tech.challenge.oficina.domain.port.NotificationPort
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -47,6 +48,7 @@ class WorkOrderApplicationServiceTest {
 	private val catalogServices = mockk<CatalogServiceRepository>()
 	private val parts = mockk<PartRepository>()
 	private val reservations = mockk<PartReservationRepository>()
+	private val notificationPort = mockk<NotificationPort>(relaxed = true)
 	private val fixedInstant = Instant.parse("2026-03-01T12:00:00Z")
 	private val clock = Clock.fixed(fixedInstant, ZoneOffset.UTC)
 	private lateinit var service: WorkOrderApplicationService
@@ -65,6 +67,7 @@ class WorkOrderApplicationServiceTest {
 			catalogServices,
 			parts,
 			reservations,
+			notificationPort,
 			clock,
 		)
 	}
@@ -151,12 +154,13 @@ class WorkOrderApplicationServiceTest {
 		@Test
 		@DisplayName("when track with matching document then returns masked payload")
 		fun success() {
+			// track() só expõe OS já liberadas ao cliente (a partir de PENDING_APPROVAL).
 			val wo = WorkOrder.create(
 				customerId = UUID.randomUUID(),
 				vehicleId = UUID.randomUUID(),
 				serviceLines = emptyList(),
 				partLines = emptyList(),
-			)
+			).copy(status = WorkOrderStatus.PENDING_APPROVAL)
 			val doc = TaxDocument.parse("52998224725")
 			every { workOrders.findByTrackingCode(wo.trackingCode) } returns Optional.of(wo)
 			every { customers.findById(wo.customerId) } returns Optional.of(Customer(wo.customerId, doc, "A"))
@@ -189,17 +193,17 @@ class WorkOrderApplicationServiceTest {
 			every { workOrders.findById(id) } returns Optional.of(wo)
 			every { parts.findById(pid) } returns Optional.of(Part(pid, "C", "N", 100, 5))
 			every { workOrders.save(any()) } answers { firstArg() }
-			service.submitPlanForInternalApproval(id)
-			service.approveInternal(id)
-			service.sendQuoteToCustomer(id)
-			verify(exactly = 0) { parts.save(any()) }
-			every { workOrders.findByTrackingCode(wo.trackingCode) } returns Optional.of(wo)
 			every { customers.findById(wo.customerId) } returns Optional.of(
 				Customer(wo.customerId, TaxDocument.parse("52998224725"), "X"),
 			)
 			every { vehicles.findById(wo.vehicleId) } returns Optional.of(
 				Vehicle(wo.vehicleId, wo.customerId, LicensePlate.parse("ABC1234"), "F", "M", 2020),
 			)
+			service.submitPlanForInternalApproval(id)
+			service.approveInternal(id)
+			service.sendQuoteToCustomer(id)
+			verify(exactly = 0) { parts.save(any()) }
+			every { workOrders.findByTrackingCode(wo.trackingCode) } returns Optional.of(wo)
 			service.approveCustomerQuote("52998224725", wo.trackingCode)
 			assertEquals(WorkOrderStatus.AWAITING_PARTS_RELEASE, wo.status)
 			verify(exactly = 0) { parts.save(any()) }
@@ -269,7 +273,6 @@ class WorkOrderApplicationServiceTest {
 			wo.startDiagnosis(fixedInstant)
 			wo.submitPlanForInternalApproval(fixedInstant.plusSeconds(1))
 			wo.approveInternal(fixedInstant.plusSeconds(2))
-			wo.sendQuoteToCustomer(fixedInstant.plusSeconds(3))
 			every { workOrders.findByTrackingCode(wo.trackingCode) } returns Optional.of(wo)
 			every { customers.findById(wo.customerId) } returns Optional.of(
 				Customer(wo.customerId, TaxDocument.parse("52998224725"), "X"),
@@ -353,6 +356,12 @@ class WorkOrderApplicationServiceTest {
 			)
 			every { workOrders.findById(id) } returns Optional.of(wo)
 			every { workOrders.save(any()) } answers { firstArg() }
+			every { customers.findById(wo.customerId) } returns Optional.of(
+				Customer(wo.customerId, TaxDocument.parse("52998224725"), "X"),
+			)
+			every { vehicles.findById(wo.vehicleId) } returns Optional.of(
+				Vehicle(wo.vehicleId, wo.customerId, LicensePlate.parse("ABC1234"), "F", "M", 2020),
+			)
 			service.completeServices(id)
 			service.registerDelivery(id)
 			assertEquals(WorkOrderStatus.DELIVERED, wo.status)
@@ -409,12 +418,114 @@ class WorkOrderApplicationServiceTest {
 			wo.startDiagnosis(fixedInstant)
 			wo.submitPlanForInternalApproval(fixedInstant.plusSeconds(1))
 			wo.approveInternal(fixedInstant.plusSeconds(2))
-			wo.sendQuoteToCustomer(fixedInstant.plusSeconds(3))
 			every { workOrders.findById(id) } returns Optional.of(wo)
 			every { workOrders.save(any()) } answers { firstArg() }
 			service.returnToDiagnosis(id)
 			assertEquals(WorkOrderStatus.IN_DIAGNOSIS, wo.status)
 			verify { reservations.cancelPendingForWorkOrder(id) }
+		}
+	}
+
+	@Nested
+	@DisplayName("Given listing ordering and logical exclusion (Fase 2)")
+	inner class GivenListingOrdering {
+
+		private fun order(status: WorkOrderStatus, createdAt: Instant): WorkOrder =
+			WorkOrder.create(
+				customerId = UUID.randomUUID(),
+				vehicleId = UUID.randomUUID(),
+				serviceLines = emptyList(),
+				partLines = emptyList(),
+			).copy(status = status, createdAt = createdAt)
+
+		@Test
+		@DisplayName("when list then excludes FINALIZED and DELIVERED orders")
+		fun excludesFinalizedAndDelivered() {
+			val received = order(WorkOrderStatus.RECEIVED, fixedInstant)
+			val finalized = order(WorkOrderStatus.FINALIZED, fixedInstant)
+			val delivered = order(WorkOrderStatus.DELIVERED, fixedInstant)
+			every { workOrders.findAll() } returns listOf(received, finalized, delivered)
+			val result = service.list()
+			assertEquals(1, result.size)
+			assertEquals(received.id, result[0].id)
+		}
+
+		@Test
+		@DisplayName("when list then orders by status priority (IN_EXECUTION > PENDING_APPROVAL > IN_DIAGNOSIS > RECEIVED)")
+		fun ordersByStatusPriority() {
+			val inExecution = order(WorkOrderStatus.IN_EXECUTION, fixedInstant)
+			val pendingApproval = order(WorkOrderStatus.PENDING_APPROVAL, fixedInstant)
+			val inDiagnosis = order(WorkOrderStatus.IN_DIAGNOSIS, fixedInstant)
+			val received = order(WorkOrderStatus.RECEIVED, fixedInstant)
+			every { workOrders.findAll() } returns listOf(received, inDiagnosis, pendingApproval, inExecution)
+			val ids = service.list().map { it.id }
+			assertEquals(listOf(inExecution.id, pendingApproval.id, inDiagnosis.id, received.id), ids)
+		}
+
+		@Test
+		@DisplayName("when same status then oldest first (FIFO)")
+		fun fifoWithinSameStatus() {
+			val older = order(WorkOrderStatus.IN_DIAGNOSIS, fixedInstant)
+			val newer = order(WorkOrderStatus.IN_DIAGNOSIS, fixedInstant.plusSeconds(60))
+			every { workOrders.findAll() } returns listOf(newer, older)
+			val ids = service.list().map { it.id }
+			assertEquals(listOf(older.id, newer.id), ids)
+		}
+	}
+
+	@Nested
+	@DisplayName("Given external budget decision idempotency (Fase 2)")
+	inner class GivenBudgetDecisionIdempotency {
+
+		private fun quotedOrder(): WorkOrder {
+			val wo = WorkOrder.create(
+				customerId = UUID.randomUUID(),
+				vehicleId = UUID.randomUUID(),
+				serviceLines = emptyList(),
+				partLines = emptyList(),
+			)
+			wo.startDiagnosis(fixedInstant)
+			wo.submitPlanForInternalApproval(fixedInstant.plusSeconds(1))
+			// approveInternal já transiciona para PENDING_APPROVAL (orçamento liberado ao cliente).
+			wo.approveInternal(fixedInstant.plusSeconds(2))
+			return wo
+		}
+
+		@Test
+		@DisplayName("when approval decision is resent then second call is idempotent")
+		fun approveIsIdempotent() {
+			val wo = quotedOrder()
+			every { workOrders.findByTrackingCode(wo.trackingCode) } returns Optional.of(wo)
+			every { workOrders.save(any()) } answers { firstArg() }
+			every { customers.findById(wo.customerId) } returns Optional.of(
+				Customer(wo.customerId, TaxDocument.parse("52998224725"), "X"),
+			)
+			every { vehicles.findById(wo.vehicleId) } returns Optional.of(
+				Vehicle(wo.vehicleId, wo.customerId, LicensePlate.parse("ABC1234"), "F", "M", 2020),
+			)
+			val first = service.approveCustomerQuote("52998224725", wo.trackingCode)
+			assertEquals(WorkOrderStatus.AWAITING_PARTS_RELEASE, first.status)
+			// Reenvio da mesma decisão não deve lançar transição inválida (idempotente).
+			val second = service.approveCustomerQuote("52998224725", wo.trackingCode)
+			assertEquals(WorkOrderStatus.AWAITING_PARTS_RELEASE, second.status)
+		}
+
+		@Test
+		@DisplayName("when rejection decision is resent then second call is idempotent")
+		fun rejectIsIdempotent() {
+			val wo = quotedOrder()
+			every { workOrders.findByTrackingCode(wo.trackingCode) } returns Optional.of(wo)
+			every { workOrders.save(any()) } answers { firstArg() }
+			every { customers.findById(wo.customerId) } returns Optional.of(
+				Customer(wo.customerId, TaxDocument.parse("52998224725"), "X"),
+			)
+			every { vehicles.findById(wo.vehicleId) } returns Optional.of(
+				Vehicle(wo.vehicleId, wo.customerId, LicensePlate.parse("ABC1234"), "F", "M", 2020),
+			)
+			val first = service.rejectCustomerQuote("52998224725", wo.trackingCode)
+			assertEquals(WorkOrderStatus.CANCELLED, first.status)
+			val second = service.rejectCustomerQuote("52998224725", wo.trackingCode)
+			assertEquals(WorkOrderStatus.CANCELLED, second.status)
 		}
 	}
 }

@@ -12,8 +12,8 @@ A documentação C4 completa (System Context, Container, Component, ER diagram e
 - Kotlin 2.3, Java 17, Gradle
 - Spring Boot 4.1.0 (web, data-jpa, validation, flyway, security, oauth2-resource-server, actuator)
 - OpenAPI / Swagger UI (springdoc)
-- Banco de dados: **PostgreSQL** + **Flyway** (migrations V1–V5 em `oficina/src/main/resources/db/migration`)
-- Email: integração com **Resend** (opcional; configurada via `APP_RESEND_API_KEY`)
+- Banco de dados: **PostgreSQL** + **Flyway** (migrations V1–V6 em `oficina/src/main/resources/db/migration`)
+- Email: notificações via **Resend** atrás da porta de domínio `NotificationPort` (opcional; configurada via `APP_RESEND_API_KEY`, no-op sem chave)
 
 **Frontend** (`frontend/`)
 - Vite + TypeScript (React)
@@ -48,8 +48,9 @@ Documentação DDD (Event Storming, diagramas) deve ser mantida no **Miro** (ou 
 - **Login (público):** `POST /api/public/auth/login` — o JWT inclui escopos conforme o usuário (veja usuários demo abaixo).
 - **Cliente (público, sem token):**
   - `GET /api/public/os/acompanhar?documento=&codigo=`
-  - `POST /api/public/os/aprovar-orcamento?documento=&codigo=`
-  - `POST /api/public/os/reprovar-orcamento?documento=&codigo=`
+  - `POST /api/public/os/orcamento/decisao` — **decisão por payload JSON** (`{ "documento", "codigo", "decisao": "APROVADO" | "RECUSADO" }`), idempotente (Fase 2)
+  - `POST /api/public/os/aprovar-orcamento?documento=&codigo=` *(legado, mantido por compatibilidade)*
+  - `POST /api/public/os/reprovar-orcamento?documento=&codigo=` *(legado)*
 
 ### Usuários in-memory (senha = username, exceto admin)
 
@@ -125,6 +126,101 @@ docker compose up --build
 - API: `http://localhost:8080`
 - Health: `http://localhost:8080/actuator/health`
 
+## Fase 2 — Infraestrutura, escalabilidade e automação
+
+A Fase 2 evolui o MVP da Fase 1 com foco em **qualidade de código (Clean/Hexagonal),
+resiliência, escalabilidade e automação de infraestrutura**:
+
+- **Clean Architecture:** notificações isoladas atrás da porta de domínio
+  `NotificationPort`, com adapter Resend na infraestrutura (a aplicação não conhece
+  mais detalhes de rede/HTTP).
+- **Listagem de OS** ordenada por prioridade de status + FIFO (`createdAt`), excluindo
+  OS finalizadas/entregues.
+- **Notificação externa de orçamento** via endpoint JSON idempotente.
+- **Containerização** endurecida (não-root, healthcheck, JRE fixa).
+- **Kubernetes** com autoescala horizontal (HPA).
+- **Terraform** provisionando um cluster local (kind).
+- **CI/CD** (GitHub Actions): build + testes → imagem no GHCR → deploy.
+
+### Arquitetura
+
+```mermaid
+flowchart TB
+    dev["Desenvolvedor"] -->|"git push"| gh["GitHub"]
+    gh --> ci["GitHub Actions CI/CD"]
+    ci -->|"build + gradle check / JaCoCo"| test["Build & Test"]
+    ci -->|"docker build/push"| ghcr[("GHCR<br/>ghcr.io/devegf/soat-tech-challenge-oficina")]
+    ci -->|"kubectl apply"| k8s
+
+    subgraph infra["Cluster Kubernetes (namespace: oficina)"]
+        k8s{{"Manifestos k8s/"}}
+        svc["Service oficina-app"] --> apppod["Deployment oficina-app<br/>1..5 réplicas"]
+        hpa[["HPA CPU 70% / Mem 80%"]] -. escala .-> apppod
+        apppod --> dbsvc["Service oficina-db"]
+        dbsvc --> dbpod["Deployment PostgreSQL<br/>+ PVC"]
+        cfg[("ConfigMap")] --> apppod
+        sec[("Secret")] --> apppod
+        sec --> dbpod
+    end
+
+    ghcr -.imagem.-> apppod
+    cliente["Cliente / Atendente"] -->|"HTTP 8080"| svc
+
+    tf["Terraform /infra"] -->|"provisiona"| infra
+```
+
+### Fluxo de deploy
+
+1. **Terraform** (`/infra`) cria o cluster kind local e instala o `metrics-server` (pré-requisito do HPA).
+2. **CI/CD** builda e publica a imagem no **GHCR** a cada push na `main`.
+3. **Manifestos** (`/k8s`) sobem PostgreSQL (com PVC), a aplicação (com probes e
+   `resources`) e o **HPA**, que escala de 1 a 5 réplicas conforme CPU/memória.
+
+### Provisionar o cluster (Terraform)
+
+```bash
+cd infra
+cp terraform.tfvars.example terraform.tfvars
+terraform init && terraform apply
+export KUBECONFIG="$(terraform output -raw kubeconfig_path)"
+```
+
+Detalhes e recursos criados: **[`infra/README.md`](infra/README.md)**.
+
+### Deploy no Kubernetes
+
+```bash
+cp k8s/11-secret.example.yaml k8s/11-secret.yaml   # preencha os segredos
+kubectl apply -f k8s/
+kubectl -n oficina get pods,hpa
+kubectl -n oficina port-forward svc/oficina-app 8080:8080
+```
+
+Detalhes (metrics-server, carga de imagem no kind, demo do HPA): **[`k8s/README.md`](k8s/README.md)**.
+
+### CI/CD
+
+Pipeline em [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml):
+
+| Job | Quando | Função |
+| --- | ------ | ------ |
+| `build-test` | push + PR | `./gradlew check bootJar` (testes + cobertura JaCoCo) |
+| `docker` | push | build e push da imagem no GHCR (tags `sha` e `latest`) |
+| `deploy` | push na `main` | cluster kind efêmero, aplica `k8s/` e faz smoke test em `/actuator/health` |
+
+### Validar localmente
+
+Para validar tudo (testes, Docker, Kubernetes) de uma vez, sem decorar comandos:
+
+```powershell
+pwsh ./scripts/validar-fase2.ps1          # testes + sobe a app via compose
+pwsh ./scripts/validar-fase2.ps1 -All     # inclui o deploy em kind
+```
+
+- Script: [`scripts/validar-fase2.ps1`](scripts/validar-fase2.ps1)
+- **Nunca usou essas ferramentas?** Guia de instalação e uso passo a passo (Windows):
+  **[`docs/FERRAMENTAS-FASE2.md`](docs/FERRAMENTAS-FASE2.md)**.
+
 ## Testes e cobertura
 
 ```bash
@@ -135,6 +231,17 @@ cd oficina
 - Testes unitários e de integração (incluindo fluxo principal da OS com MockMvc + segurança).
 - **JaCoCo:** `check` executa `jacocoTestCoverageVerification` com **mínimo de 80% de linhas** nos pacotes `domain` e `application` (classes de DTO em `application.api.dto` excluídas do cálculo por serem apenas estruturas de dados).
 - Relatório HTML: `oficina/build/reports/jacoco/test/html/index.html`.
+
+## Coleção de APIs (Postman)
+
+- Collection: [`oficina/docs/postman/Oficina.postman_collection.json`](oficina/docs/postman/Oficina.postman_collection.json)
+- Environment local: [`oficina/docs/postman/Oficina-Local.postman_environment.json`](oficina/docs/postman/Oficina-Local.postman_environment.json)
+- Alternativa: **Swagger UI** em `http://localhost:8080/swagger-ui.html`.
+
+## Vídeo demonstrativo
+
+> _A definir_ — link do vídeo (até 15 min) demonstrando deploy, execução do CI/CD,
+> consumo das APIs e a escalabilidade automática (HPA sob carga).
 
 ## Relatório de vulnerabilidades
 

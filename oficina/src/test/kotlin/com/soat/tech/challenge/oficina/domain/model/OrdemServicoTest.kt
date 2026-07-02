@@ -37,7 +37,7 @@ class WorkOrderTest {
 			assertEquals(WorkOrderStatus.PENDING_INTERNAL_APPROVAL, wo.status)
 			wo.approveInternal(t0.plusSeconds(90))
 			assertNotNull(wo.internalApprovedAt)
-			wo.sendQuoteToCustomer(t0.plusSeconds(120))
+			// approveInternal já libera o orçamento ao cliente (PENDING_APPROVAL).
 			assertEquals(WorkOrderStatus.PENDING_APPROVAL, wo.status)
 			wo.approveCustomerQuote(t0.plusSeconds(150))
 			assertEquals(WorkOrderStatus.AWAITING_PARTS_RELEASE, wo.status)
@@ -92,7 +92,6 @@ class WorkOrderTest {
 			wo.startDiagnosis(t0)
 			wo.submitPlanForInternalApproval(t0.plusSeconds(1))
 			wo.approveInternal(t0.plusSeconds(2))
-			wo.sendQuoteToCustomer(t0.plusSeconds(3))
 			wo.rejectCustomerQuote(t0.plusSeconds(4))
 			assertEquals(WorkOrderStatus.CANCELLED, wo.status)
 		}

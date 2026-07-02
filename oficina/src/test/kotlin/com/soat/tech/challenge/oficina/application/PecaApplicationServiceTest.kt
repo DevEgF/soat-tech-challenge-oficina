@@ -6,6 +6,7 @@ import com.soat.tech.challenge.oficina.domain.exception.BusinessRuleException
 import com.soat.tech.challenge.oficina.domain.exception.NotFoundException
 import com.soat.tech.challenge.oficina.domain.model.Part
 import com.soat.tech.challenge.oficina.domain.port.PartRepository
+import com.soat.tech.challenge.oficina.domain.port.PartReservationRepository
 import io.mockk.every
 import io.mockk.mockk
 import java.util.Optional
@@ -19,7 +20,8 @@ import org.junit.jupiter.api.Test
 class PartApplicationServiceTest {
 
 	private val repo = mockk<PartRepository>()
-	private val service = PartApplicationService(repo)
+	private val reservations = mockk<PartReservationRepository>(relaxed = true)
+	private val service = PartApplicationService(repo, reservations)
 
 	@Nested
 	@DisplayName("Given new part code")
