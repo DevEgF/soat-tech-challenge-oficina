@@ -1,0 +1,14 @@
+# Strategic merge patch: reescreve os args do metrics-server incluindo
+# --kubelet-insecure-tls (necessário em kind, onde o kubelet usa cert self-signed).
+spec:
+  template:
+    spec:
+      containers:
+        - name: metrics-server
+          args:
+            - --cert-dir=/tmp
+            - --secure-port=10250
+            - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+            - --kubelet-use-node-status-port
+            - --metric-resolution=15s
+            - --kubelet-insecure-tls

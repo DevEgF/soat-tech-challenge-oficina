@@ -22,6 +22,7 @@ import com.soat.tech.challenge.oficina.domain.port.PartRepository
 import com.soat.tech.challenge.oficina.domain.port.PartReservationRepository
 import com.soat.tech.challenge.oficina.domain.port.CatalogServiceRepository
 import com.soat.tech.challenge.oficina.domain.port.VehicleRepository
+import com.soat.tech.challenge.oficina.domain.port.NotificationPort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -29,14 +30,14 @@ import java.util.UUID
 
 @Service
 class WorkOrderApplicationService(
-	private val workOrders: WorkOrderRepository,
-	private val customers: CustomerRepository,
-	private val vehicles: VehicleRepository,
-	private val catalogServices: CatalogServiceRepository,
-	private val parts: PartRepository,
-	private val reservations: PartReservationRepository,
-	private val resendEmailService: ResendEmailService,
-	private val clock: Clock,
+    private val workOrders: WorkOrderRepository,
+    private val customers: CustomerRepository,
+    private val vehicles: VehicleRepository,
+    private val catalogServices: CatalogServiceRepository,
+    private val parts: PartRepository,
+    private val reservations: PartReservationRepository,
+    private val notificationPort: NotificationPort,
+    private val clock: Clock,
 ) {
 
 	private fun catalogServiceName(id: UUID): String? =
@@ -125,7 +126,11 @@ class WorkOrderApplicationService(
 	}
 
 	@Transactional(readOnly = true)
-	fun list(): List<WorkOrderResponse> = workOrders.findAll().map { it.toDto() }
+	fun list(): List<WorkOrderResponse> =
+	    workOrders.findAll()
+	        .filterNot { it.status.hiddenFromListing }
+	        .sortedWith(compareBy({ it.status.listingPriority }, { it.createdAt }))
+	        .map { it.toDto() }
 
 	@Transactional(readOnly = true)
 	fun get(id: UUID): WorkOrderResponse =
@@ -151,6 +156,7 @@ class WorkOrderApplicationService(
 		return WorkOrderTrackingResponse(
 			trackingCode = wo.trackingCode,
 			status = wo.status,
+			statusLabel = wo.status.label,
 			totalCents = wo.totalCents,
 			vehiclePlate = vehicle.licensePlate.normalized,
 			maskedCustomerTaxId = maskTaxId(doc.digits),
@@ -177,9 +183,13 @@ class WorkOrderApplicationService(
 	@Transactional
 	fun approveCustomerQuote(customerTaxIdDigits: String, trackingCode: String): WorkOrderTrackingResponse {
 		val wo = loadWorkOrderForCustomer(customerTaxIdDigits, trackingCode)
+		// Idempotência: aprovação já aplicada (liberada ao almoxarife ou em execução) não reaplica a transição.
+		if (wo.status == WorkOrderStatus.AWAITING_PARTS_RELEASE || wo.status == WorkOrderStatus.IN_EXECUTION) {
+			return track(customerTaxIdDigits, trackingCode)
+		}
+		// Swimlane: a aprovação do cliente apenas libera a OS ao almoxarife (AWAITING_PARTS_RELEASE).
+		// A execução só inicia na confirmação de saída das peças (WarehouseApplicationService.confirmStockExitForWorkOrder).
 		wo.approveCustomerQuote(now())
-		reservations.confirmPendingForWorkOrder(wo.id)
-		wo.startExecution(now())
 		workOrders.save(wo)
 		return track(customerTaxIdDigits, trackingCode)
 	}
@@ -187,6 +197,10 @@ class WorkOrderApplicationService(
 	@Transactional
 	fun rejectCustomerQuote(customerTaxIdDigits: String, trackingCode: String): WorkOrderTrackingResponse {
 		val wo = loadWorkOrderForCustomer(customerTaxIdDigits, trackingCode)
+		// Idempotência: decisão de recusa reenviada não reaplica a transição.
+		if (wo.status == WorkOrderStatus.CANCELLED) {
+			return track(customerTaxIdDigits, trackingCode)
+		}
 		cancelReservationsIfAny(wo.id)
 		wo.rejectCustomerQuote(now())
 		workOrders.save(wo)
@@ -259,7 +273,16 @@ class WorkOrderApplicationService(
 			return wo.toDto()
 		}
 		wo.sendQuoteToCustomer(now())
-		return workOrders.save(wo).toDto()
+		val saved = workOrders.save(wo)
+		val customer = customers.findById(saved.customerId).orElseThrow { NotFoundException("Customer not found") }
+		val vehicle = vehicles.findById(saved.vehicleId).orElseThrow { NotFoundException("Vehicle not found") }
+		notificationPort.notifyQuoteSentToCustomer(
+			customerName = customer.name,
+			customerEmail = customer.email,
+			vehicleModel = "${vehicle.brand} ${vehicle.model}",
+			quoteTotalCents = saved.totalCents,
+		)
+		return saved.toDto()
 	}
 
 	@Transactional
@@ -283,10 +306,10 @@ class WorkOrderApplicationService(
 		val saved = workOrders.save(wo)
 		val customer = customers.findById(saved.customerId).orElseThrow { NotFoundException("Customer not found") }
 		val vehicle = vehicles.findById(saved.vehicleId).orElseThrow { NotFoundException("Vehicle not found") }
-		resendEmailService.sendWorkOrderFinalizedEmail(
-			customerName = customer.name,
-			customerEmail = customer.email,
-			vehicleModel = "${vehicle.brand} ${vehicle.model}",
+		notificationPort.notifyWorkOrderFinalized(
+		    customerName = customer.name,
+		    customerEmail = customer.email,
+		    vehicleModel = "${vehicle.brand} ${vehicle.model}",
 		)
 		return saved.toDto()
 	}
@@ -295,6 +318,14 @@ class WorkOrderApplicationService(
 	fun registerDelivery(id: UUID): WorkOrderResponse {
 		val wo = workOrders.findById(id).orElseThrow { NotFoundException("Work order not found") }
 		wo.registerDelivery(now())
-		return workOrders.save(wo).toDto()
+		val saved = workOrders.save(wo)
+		val customer = customers.findById(saved.customerId).orElseThrow { NotFoundException("Customer not found") }
+		val vehicle = vehicles.findById(saved.vehicleId).orElseThrow { NotFoundException("Vehicle not found") }
+		notificationPort.notifyDeliveryRegistered(
+			customerName = customer.name,
+			customerEmail = customer.email,
+			vehicleModel = "${vehicle.brand} ${vehicle.model}",
+		)
+		return saved.toDto()
 	}
 }

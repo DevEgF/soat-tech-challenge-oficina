@@ -266,11 +266,15 @@ class CurlTestsDocumentedFlowIntegrationTest {
 
 		getBearer("/api/warehouse/alertas-estoque-baixo", warehouseToken)
 
-		mockMvc.perform(
+		val metricasJson = mockMvc.perform(
 			get("/api/admin/metricas/tempo-medio-execucao-servicos")
 				.header(HttpHeaders.AUTHORIZATION, "Bearer $adminToken"),
 		)
 			.andExpect(status().isOk)
-			.andExpect(jsonPath("$[0].catalogServiceId").value(servicoId))
+			.andReturn().response.contentAsString
+		val metricas = mapper.readTree(metricasJson)
+		val temMetricaDoServico = metricas.elements().asSequence()
+			.any { it.path("catalogServiceId").asText() == servicoId }
+		assertTrue(temMetricaDoServico, "esperado metrica para servicoId=$servicoId em $metricasJson")
 	}
 }

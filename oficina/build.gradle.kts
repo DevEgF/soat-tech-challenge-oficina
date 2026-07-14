@@ -40,6 +40,7 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testImplementation("io.mockk:mockk:1.13.10")
+	testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

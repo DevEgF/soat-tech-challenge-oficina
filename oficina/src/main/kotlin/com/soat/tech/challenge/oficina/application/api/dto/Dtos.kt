@@ -138,6 +138,7 @@ data class WorkOrderResponse(
 	val vehicleId: UUID,
 	val diagnosisNotes: String?,
 	val status: WorkOrderStatus,
+	val statusLabel: String,
 	val servicesTotalCents: Long,
 	val partsTotalCents: Long,
 	val totalCents: Long,
@@ -148,6 +149,7 @@ data class WorkOrderResponse(
 data class WorkOrderTrackingResponse(
 	val trackingCode: String,
 	val status: WorkOrderStatus,
+	val statusLabel: String,
 	val totalCents: Long,
 	val vehiclePlate: String,
 	val maskedCustomerTaxId: String,

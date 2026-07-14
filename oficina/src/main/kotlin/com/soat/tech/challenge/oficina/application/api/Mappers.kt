@@ -58,6 +58,7 @@ fun WorkOrder.toResponse(
 	vehicleId = vehicleId,
 	diagnosisNotes = diagnosisNotes,
 	status = status,
+	statusLabel = status.label,
 	servicesTotalCents = servicesTotalCents,
 	partsTotalCents = partsTotalCents,
 	totalCents = totalCents,

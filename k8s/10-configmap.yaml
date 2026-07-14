@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oficina-config
+  namespace: oficina
+  labels:
+    app.kubernetes.io/part-of: oficina
+data:
+  # Config não sensível da aplicação.
+  SPRING_PROFILES_ACTIVE: "docker"
+  SPRING_FLYWAY_ENABLED: "true"
+  # Service do Postgres no mesmo namespace (ver 20-db-service.yaml).
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://oficina-db:5432/oficina"
+  SPRING_DATASOURCE_USERNAME: "oficina"
+  APP_RESEND_FROM_EMAIL: "noreply@oficinasys.local"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oficina-db-config
+  namespace: oficina
+  labels:
+    app.kubernetes.io/part-of: oficina
+data:
+  POSTGRES_DB: "oficina"
+  POSTGRES_USER: "oficina"

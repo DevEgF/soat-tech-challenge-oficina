@@ -9,4 +9,15 @@ oficina/docs/security-scans/oficina-fat.jar
 oficina/docs/security-scans/*.tmp
 
 docs/frontend-permissoes-acesso.md
-oficina/gradlew
+
+# Kubernetes — secret real preenchido (use 11-secret.example.yaml como template)
+k8s/11-secret.yaml
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+infra/*.tfstate
+infra/*.tfstate.*
+infra/terraform.tfvars
+infra/*.kubeconfig
+infra/crash.log
