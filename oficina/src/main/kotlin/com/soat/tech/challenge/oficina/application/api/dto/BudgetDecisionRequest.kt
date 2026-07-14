@@ -2,7 +2,6 @@ package com.soat.tech.challenge.oficina.application.api.dto
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
-import java.util.UUID
 
 data class BudgetDecisionRequest(
     @field:NotBlank
