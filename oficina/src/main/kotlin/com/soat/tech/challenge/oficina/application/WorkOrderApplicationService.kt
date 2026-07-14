@@ -156,6 +156,7 @@ class WorkOrderApplicationService(
 		return WorkOrderTrackingResponse(
 			trackingCode = wo.trackingCode,
 			status = wo.status,
+			statusLabel = wo.status.label,
 			totalCents = wo.totalCents,
 			vehiclePlate = vehicle.licensePlate.normalized,
 			maskedCustomerTaxId = maskTaxId(doc.digits),

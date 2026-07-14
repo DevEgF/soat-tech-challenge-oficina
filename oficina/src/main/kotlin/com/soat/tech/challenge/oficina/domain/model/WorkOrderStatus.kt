@@ -23,4 +23,20 @@ enum class WorkOrderStatus {
     }
 
     val hiddenFromListing: Boolean get() = this == FINALIZED || this == DELIVERED
+
+    /**
+     * Portuguese label required at the API surface by the Tech Challenge spec.
+     * Internal swimlane states not named in the spec map to the closest customer-facing stage.
+     */
+    val label: String get() = when (this) {
+        RECEIVED -> "Recebida"
+        IN_DIAGNOSIS -> "Diagnóstico"
+        PENDING_INTERNAL_APPROVAL -> "Diagnóstico"
+        PENDING_APPROVAL -> "Aguardando Aprovação"
+        AWAITING_PARTS_RELEASE -> "Execução"
+        IN_EXECUTION -> "Execução"
+        FINALIZED -> "Finalizada"
+        DELIVERED -> "Entregue"
+        CANCELLED -> "Cancelada"
+    }
 }
