@@ -24,6 +24,22 @@ jobs:
   build-test:
     name: Build & Test
     runs-on: ubuntu-latest
+    # Testes de integração conectam num PostgreSQL real (src/test/resources/application-test.properties),
+    # sem H2/Testcontainers — precisa de um serviço de banco disponível no job.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: oficina
+          POSTGRES_USER: oficina
+          POSTGRES_PASSWORD: oficina
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +57,10 @@ jobs:
       - name: Build (bootJar) + check (testes + JaCoCo)
         run: ./gradlew --no-daemon check bootJar
         working-directory: oficina
+        env:
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/oficina
+          SPRING_DATASOURCE_USERNAME: oficina
+          SPRING_DATASOURCE_PASSWORD: oficina
 
       - name: Upload test & coverage reports
         if: always()
