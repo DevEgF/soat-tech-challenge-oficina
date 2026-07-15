@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Tech Challenge — Fase 2 — Documento de Entrega</title>
+<style>
+  @page { size: A4; margin: 22mm 18mm; }
+  html, body { font-family: "Segoe UI", Arial, sans-serif; color: #1f2328; line-height: 1.45; font-size: 11pt; }
+  h1 { font-size: 20pt; margin: 0 0 4pt 0; color: #0f172a; }
+  h2 { font-size: 14pt; margin: 22pt 0 6pt 0; color: #0f172a; border-bottom: 1px solid #d0d7de; padding-bottom: 4pt; }
+  h3 { font-size: 12pt; margin: 16pt 0 4pt 0; color: #0f172a; }
+  .subtitle { color: #57606a; font-size: 11pt; margin-bottom: 18pt; }
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt 0; font-size: 10pt; }
+  th, td { border: 1px solid #d0d7de; padding: 6pt 8pt; text-align: left; vertical-align: top; }
+  th { background: #f6f8fa; font-weight: 600; }
+  ul { margin: 4pt 0 8pt 18pt; padding: 0; }
+  li { margin: 2pt 0; }
+  code, .mono { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: #f6f8fa; padding: 1pt 4pt; border-radius: 3pt; }
+  .placeholder { background: #fff3bf; padding: 1pt 4pt; border-radius: 3pt; font-style: italic; color: #6a4e00; }
+  .meta { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 6pt; padding: 10pt 14pt; margin: 0 0 18pt 0; }
+  .meta p { margin: 4pt 0; }
+  .sev-high { color: #b42318; font-weight: 600; }
+  .sev-med { color: #b54708; font-weight: 600; }
+  .sev-low { color: #175cd3; font-weight: 600; }
+  .sev-info { color: #027a48; font-weight: 600; }
+  .sev-ok { color: #027a48; font-weight: 600; }
+  .sev-pending { color: #b54708; font-weight: 600; }
+  a { color: #0969da; word-break: break-all; }
+  .pagebreak { page-break-after: always; }
+</style>
+</head>
+<body>
+
+<h1>Tech Challenge — Fase 2</h1>
+<div class="subtitle">Pós Tech SOAT — Sistema Integrado de Atendimento e Execução de Serviços (Oficina Mecânica) — Infraestrutura, Escalabilidade e CI/CD</div>
+
+<div class="meta">
+  <p><strong>Nome do grupo:</strong> Lucas e José</p>
+  <p><strong>Data de entrega:</strong> 14/07/2026</p>
+</div>
+
+<h2>1. Participantes</h2>
+<table>
+  <thead>
+    <tr><th>Nome completo</th><th>Username no Discord</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>José do Egito Gomes da Silva Filho</td>
+      <td>Jose E G S Filho - RM370389</td>
+    </tr>
+    <tr>
+      <td>Lucas Karisson Ferreira Moreira</td>
+      <td>Lucas Moreira - RM372752</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>2. Links</h2>
+<table>
+  <tbody>
+    <tr>
+      <th style="width: 28%;">Repositório (privado)</th>
+      <td><a href="https://github.com/DevEgF/soat-tech-challenge-oficina">https://github.com/DevEgF/soat-tech-challenge-oficina</a><br>
+      <small>Acesso liberado para o usuário <code>soat-architecture</code>.</small></td>
+    </tr>
+    <tr>
+      <th>Desenho da arquitetura (Fase 2)</th>
+      <td>Diagrama Mermaid embutido no <code>README.md</code> raiz (seção "Fase 2 — Infraestrutura, escalabilidade e automação" → "Arquitetura"), cobrindo componentes da aplicação, infraestrutura provisionada (K8s/Terraform) e fluxo de deploy (CI/CD).</td>
+    </tr>
+    <tr>
+      <th>Vídeo de demonstração</th>
+      <td class="placeholder">A definir — link YouTube/Vimeo (até 15 min), público ou não listado. Ver checklist na seção 5.</td>
+    </tr>
+    <tr>
+      <th>Coleção Postman</th>
+      <td><code>oficina/docs/postman/Oficina.postman_collection.json</code> (alternativa: Swagger UI em <code>/swagger-ui.html</code>)</td>
+    </tr>
+    <tr>
+      <th>Manifestos Kubernetes</th>
+      <td><code>/k8s</code> (namespace, configmap, secret.example, db, app deployment+service, HPA)</td>
+    </tr>
+    <tr>
+      <th>Scripts Terraform</th>
+      <td><code>/infra</code> (cluster kind + metrics-server + apply dos manifestos K8s)</td>
+    </tr>
+    <tr>
+      <th>Pipeline CI/CD</th>
+      <td><code>.github/workflows/ci-cd.yml</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>3. Visão geral da entrega</h2>
+<p>Evolução do back-end da oficina mecânica (Kotlin + Spring Boot, Clean Architecture) com foco em infraestrutura, resiliência e escalabilidade: containerização revisada, orquestração via Kubernetes com autoscaling horizontal (HPA), provisionamento de infraestrutura como código (Terraform) e pipeline de CI/CD completa (build, testes, imagem Docker, deploy no cluster e no banco).</p>
+
+<h3>Atendimento aos critérios obrigatórios</h3>
+<table>
+  <thead><tr><th>Critério</th><th>Status</th><th>Evidência</th></tr></thead>
+  <tbody>
+    <tr><td>Clean Code (nomes claros, simplicidade, coesão)</td><td class="sev-ok">OK</td><td><code>domain/model/WorkOrder.kt</code>, <code>application/WorkOrderApplicationService.kt</code></td></tr>
+    <tr><td>Clean Architecture (separação de camadas e dependências)</td><td class="sev-ok">OK</td><td>Pacotes <code>domain / application / infrastructure / presentation</code> + <code>test/architecture/ArchitectureTest.kt</code> (ArchUnit, dependência de camadas verificada automaticamente)</td></tr>
+    <tr><td>Testes automatizados cobrindo fluxos críticos</td><td class="sev-ok">OK</td><td><code>OrdemServicoFlowIntegrationTest</code>, <code>SwimlaneFlowsIntegrationTest</code> (reserva/confirmação de peças), <code>CurlTestsDocumentedFlowIntegrationTest</code>; gate JaCoCo ≥80% em <code>domain</code>/<code>application</code> no CI</td></tr>
+    <tr><td>API Abertura de OS (cliente, veículo, serviços, peças → ID único)</td><td class="sev-ok">OK</td><td><code>POST /api/attendant/ordens-servico</code></td></tr>
+    <tr><td>API Consulta de status (rótulos: Recebida/Diagnóstico/Aguardando Aprovação/Execução/Finalizada/Entregue)</td><td class="sev-ok">OK</td><td><code>WorkOrderStatus.label</code> + campo <code>statusLabel</code> em <code>WorkOrderResponse</code>/<code>WorkOrderTrackingResponse</code></td></tr>
+    <tr><td>API Aprovação de orçamento (externa)</td><td class="sev-ok">OK</td><td><code>PublicWorkOrderController</code> — <code>/api/public/os/orcamento/decisao</code> (sem autenticação)</td></tr>
+    <tr><td>Listagem: ordenação por status + mais antigas primeiro + exclusão lógica de finalizadas/entregues</td><td class="sev-ok">OK</td><td><code>WorkOrderStatus.listingPriority</code>/<code>hiddenFromListing</code>, <code>WorkOrderApplicationService.list()</code></td></tr>
+    <tr><td>Atualização de status via email</td><td class="sev-ok">OK</td><td><code>NotificationPort</code> → <code>ResendNotificationAdapter</code> (orçamento enviado, OS finalizada, veículo entregue)</td></tr>
+    <tr><td>Dockerfile atualizado</td><td class="sev-ok">OK</td><td>Multi-stage, non-root, healthcheck, Alpine runtime</td></tr>
+    <tr><td>docker-compose para desenvolvimento local</td><td class="sev-ok">OK</td><td><code>docker-compose.yml</code> (app + PostgreSQL)</td></tr>
+    <tr><td>Kubernetes: Deployments, Services, ConfigMaps, Secrets, HPA</td><td class="sev-ok">OK</td><td><code>/k8s/30-app.yaml</code> (Deployment+Service, secrets via <code>secretKeyRef</code>), <code>/k8s/40-hpa.yaml</code> (1–5 réplicas, CPU 70%/mem 80%)</td></tr>
+    <tr><td>Terraform: cluster K8s + banco de dados + documentação</td><td class="sev-ok">OK</td><td><code>/infra/main.tf</code> (cluster kind + aplica manifestos incluindo banco), <code>/infra/README.md</code></td></tr>
+    <tr><td>Pipeline CI/CD: build, testes, imagem Docker, deploy cluster, deploy banco, aplicação dos manifestos</td><td class="sev-ok">OK</td><td><code>.github/workflows/ci-cd.yml</code> — jobs <code>build-test</code>, <code>docker</code>, <code>deploy</code></td></tr>
+    <tr><td>README com descrição, desenho de arquitetura, instruções e links</td><td class="sev-ok">OK</td><td><code>README.md</code> raiz</td></tr>
+    <tr><td>Repositório com acesso <code>soat-architecture</code></td><td class="sev-ok">OK</td><td>https://github.com/DevEgF/soat-tech-challenge-oficina</td></tr>
+  </tbody>
+</table>
+
+<h2>4. Arquitetura proposta</h2>
+<p>Ver diagrama Mermaid completo no <code>README.md</code> raiz (seção "Fase 2 — Infraestrutura, escalabilidade e automação"). Resumo dos componentes:</p>
+<ul>
+  <li><strong>Aplicação:</strong> Spring Boot (Kotlin), Clean Architecture, empacotada em imagem Docker multi-stage.</li>
+  <li><strong>Orquestração:</strong> Kubernetes — <code>Deployment</code> da aplicação e do banco, <code>Service</code>, <code>ConfigMap</code>/<code>Secret</code> para configuração e credenciais, <code>HorizontalPodAutoscaler</code> escalando 1–5 réplicas por CPU/memória.</li>
+  <li><strong>Infraestrutura como código:</strong> Terraform provisiona o cluster (kind) e aplica os manifestos do namespace, do banco e da aplicação.</li>
+  <li><strong>CI/CD:</strong> GitHub Actions — build + testes (gate de cobertura JaCoCo) → build/push da imagem Docker → provisiona cluster efêmero → aplica manifestos K8s (banco + app) → smoke test.</li>
+</ul>
+
+</body>
+</html>
