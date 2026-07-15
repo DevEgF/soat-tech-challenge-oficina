@@ -37,12 +37,17 @@ resource "null_resource" "metrics_server" {
     cluster = kind_cluster.oficina.id
   }
 
+  # KUBECONFIG via env var (não como flag entre aspas): o local-exec do Terraform
+  # no Windows corrompe aspas aninhadas dentro do comando (cmd /C re-escapa a
+  # string inteira), então evitamos aspas embutidas e passamos o path pelo env.
   provisioner "local-exec" {
-    command = "kubectl --kubeconfig \"${kind_cluster.oficina.kubeconfig_path}\" apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
+    command     = "kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml"
+    environment = { KUBECONFIG = kind_cluster.oficina.kubeconfig_path }
   }
 
   provisioner "local-exec" {
-    command = "kubectl --kubeconfig \"${kind_cluster.oficina.kubeconfig_path}\" -n kube-system patch deployment metrics-server --patch-file \"${path.module}/metrics-server-kubelet-insecure.yaml\""
+    command     = "kubectl -n kube-system patch deployment metrics-server --patch-file ${path.module}/metrics-server-kubelet-insecure.yaml"
+    environment = { KUBECONFIG = kind_cluster.oficina.kubeconfig_path }
   }
 }
 
@@ -63,6 +68,7 @@ resource "null_resource" "workloads" {
   }
 
   provisioner "local-exec" {
-    command = "kubectl --kubeconfig \"${kind_cluster.oficina.kubeconfig_path}\" apply -f \"${path.module}/${var.manifests_path}\""
+    command     = "kubectl apply -f ${path.module}/${var.manifests_path}"
+    environment = { KUBECONFIG = kind_cluster.oficina.kubeconfig_path }
   }
 }
