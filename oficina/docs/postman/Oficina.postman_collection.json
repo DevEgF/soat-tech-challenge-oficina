@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Oficina - Tech Challenge",
-    "description": "Coleção completa para testar a API da Oficina (Spring Boot/Kotlin). Inclui Auth, CRUDs administrativos, fluxo da OS por papel (atendente/técnico/almoxarife) e um cenário 'Fluxo completo (Event Storm)' que executa o swimlane ponta a ponta. Variáveis de ambiente são preenchidas automaticamente pelos scripts de teste.",
+    "description": "Coleção completa para testar a API da Oficina (Spring Boot/Kotlin). Inclui Auth, CRUDs administrativos, consultas de catálogo/peças e plano de diagnóstico pelo técnico, decisão de orçamento via endpoint JSON, reservas pendentes (por OS e geral) do almoxarife, fluxo da OS por papel (atendente/técnico/almoxarife) e um cenário 'Fluxo completo (Event Storm)' que executa o swimlane ponta a ponta. Variáveis de ambiente são preenchidas automaticamente pelos scripts de teste.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -184,6 +184,31 @@
               ]
             }
           }
+        },
+        {
+          "name": "Decidir orçamento (JSON, aprovar ou recusar)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documento\": \"{{documentoDigits}}\",\n  \"codigo\": \"{{trackingCode}}\",\n  \"decisao\": \"APROVADO\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/public/os/orcamento/decisao", "host": ["{{baseUrl}}"], "path": ["api", "public", "os", "orcamento", "decisao"] },
+            "description": "Endpoint JSON idempotente que substitui os dois endpoints legados abaixo (`aprovar-orcamento`/`reprovar-orcamento`, mantidos por compatibilidade). `decisao` aceita `APROVADO` ou `RECUSADO`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('status = AWAITING_PARTS_RELEASE', () => pm.expect(pm.response.json().status).to.eql('AWAITING_PARTS_RELEASE'));"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Aprovar orçamento (cliente)",
@@ -673,6 +698,18 @@
           }
         },
         {
+          "name": "Atualizar plano de diagnóstico (serviços/peças/notas)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"services\": [\n    { \"catalogServiceId\": \"{{catalogServiceId}}\", \"quantity\": 1 }\n  ],\n  \"parts\": [\n    { \"partId\": \"{{partId}}\", \"quantity\": 2 }\n  ],\n  \"diagnosisNotes\": \"Correia dentada com desgaste, recomendada troca preventiva.\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/technician/ordens-servico/{{workOrderId}}/plano", "host": ["{{baseUrl}}"], "path": ["api", "technician", "ordens-servico", "{{workOrderId}}", "plano"] }
+          }
+        },
+        {
           "name": "Submeter plano (cria reservas de peças)",
           "request": {
             "method": "POST",
@@ -687,6 +724,56 @@
             "header": [],
             "url": { "raw": "{{baseUrl}}/api/technician/ordens-servico/{{workOrderId}}/concluir-servicos", "host": ["{{baseUrl}}"], "path": ["api", "technician", "ordens-servico", "{{workOrderId}}", "concluir-servicos"] }
           }
+        },
+        {
+          "name": "Catálogo de serviços (consulta)",
+          "item": [
+            {
+              "name": "Listar serviços de catálogo",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/technician/servicos-catalogo", "host": ["{{baseUrl}}"], "path": ["api", "technician", "servicos-catalogo"] }
+              }
+            },
+            {
+              "name": "Buscar serviço de catálogo por id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/technician/servicos-catalogo/{{catalogServiceId}}", "host": ["{{baseUrl}}"], "path": ["api", "technician", "servicos-catalogo", "{{catalogServiceId}}"] }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Peças (consulta)",
+          "item": [
+            {
+              "name": "Listar peças",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/technician/pecas", "host": ["{{baseUrl}}"], "path": ["api", "technician", "pecas"] }
+              }
+            },
+            {
+              "name": "Disponibilidade de peças (estoque - reservas pendentes)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/technician/pecas/disponibilidade", "host": ["{{baseUrl}}"], "path": ["api", "technician", "pecas", "disponibilidade"] }
+              }
+            },
+            {
+              "name": "Buscar peça por id",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": { "raw": "{{baseUrl}}/api/technician/pecas/{{partId}}", "host": ["{{baseUrl}}"], "path": ["api", "technician", "pecas", "{{partId}}"] }
+              }
+            }
+          ]
         }
       ]
     },
@@ -698,6 +785,14 @@
         "bearer": [{ "key": "token", "value": "{{warehouseToken}}", "type": "string" }]
       },
       "item": [
+        {
+          "name": "Listar todas as reservas pendentes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/warehouse/reservas-pendentes", "host": ["{{baseUrl}}"], "path": ["api", "warehouse", "reservas-pendentes"] }
+          }
+        },
         {
           "name": "Listar reservas pendentes da OS",
           "request": {
