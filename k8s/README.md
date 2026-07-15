@@ -42,9 +42,13 @@ kubectl -n oficina get hpa
 ## Acesso local
 
 ```bash
-kubectl -n oficina port-forward svc/oficina-app 8080:8080
-# http://localhost:8080/actuator/health  -> {"status":"UP"}
+kubectl -n oficina port-forward svc/oficina-app 8081:8080
+# http://localhost:8081/actuator/health  -> {"status":"UP"}
 ```
+
+> Se o cluster foi criado via Terraform (`infra/`), a porta `8080` do host já está
+> reservada pelo `extra_port_mappings` do kind — use outra porta local (ex.: `8081`)
+> no `port-forward`.
 
 ## Validar autoescala (demo do HPA)
 

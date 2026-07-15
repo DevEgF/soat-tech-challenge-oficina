@@ -193,8 +193,14 @@ Detalhes e recursos criados: **[`infra/README.md`](infra/README.md)**.
 cp k8s/11-secret.example.yaml k8s/11-secret.yaml   # preencha os segredos
 kubectl apply -f k8s/
 kubectl -n oficina get pods,hpa
-kubectl -n oficina port-forward svc/oficina-app 8080:8080
+kubectl -n oficina port-forward svc/oficina-app 8081:8080
+# http://localhost:8081/actuator/health
 ```
+
+> **Nota:** se o cluster foi criado pelo Terraform (`infra/`), a porta **8080 do host já
+> está reservada** pelo `extra_port_mappings` do kind (ver `infra/main.tf`) — por isso o
+> `port-forward` acima usa `8081` local. Ajuste a porta local à vontade, só evite `8080`
+> nesse cenário.
 
 Detalhes (metrics-server, carga de imagem no kind, demo do HPA): **[`k8s/README.md`](k8s/README.md)**.
 
@@ -204,9 +210,9 @@ Pipeline em [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml):
 
 | Job | Quando | Função |
 | --- | ------ | ------ |
-| `build-test` | push + PR | `./gradlew check bootJar` (testes + cobertura JaCoCo) |
-| `docker` | push | build e push da imagem no GHCR (tags `sha` e `latest`) |
-| `deploy` | push na `main` | cluster kind efêmero, aplica `k8s/` e faz smoke test em `/actuator/health` |
+| `build-test` | push + PR | `./gradlew check bootJar` (testes + cobertura JaCoCo), com serviço PostgreSQL no runner |
+| `docker` | push + PR | builda a imagem sempre (valida o Dockerfile); **publica** no GHCR (tags `sha` e `latest`) só em push na `main`/tag |
+| `deploy` | push + PR | cluster kind efêmero, carrega a imagem buildada localmente (sem depender do GHCR), aplica `k8s/` e faz smoke test em `/actuator/health` |
 
 ### Validar localmente
 
